@@ -1,0 +1,53 @@
+@extends('layouts.master')
+@section('content')
+    <div class="animate__animated p-6" :class="[$store.app.animation]">
+        <div class="panel h-full w-full">
+            <div class="mb-5 flex items-center justify-between">
+                <h5 class="text-lg font-semibold dark:text-white-light">Data User</h5>
+                <a href="{{ route('user.create') }}" class="btn btn-primary">Tambah User</a>
+            </div>
+
+            @if(session('success'))
+                <div class="mb-5 rounded bg-success-light p-3 text-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            <div class="table-responsive">
+                <table class="table-hover">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($users as $item)
+                        <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
+                            <td>{{ $loop->iteration }}</td>
+                            <td class="text-black dark:text-white">{{ $item->name }}</td>
+                            <td>{{ $item->email }}</td>
+                            <td class="text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <a href="{{ route('user.edit', $item->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                    <form action="{{ route('user.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin hapus data?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center">Data user kosong</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+@endsection
