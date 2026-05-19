@@ -24,6 +24,11 @@
                 <input id="nama_barang" type="text" name="nama_barang" value="{{ $barang->nama_barang }}" class="form-input" placeholder="Masukkan Nama Barang" required />
             </div>
 
+            <div class="mb-5">
+                <label for="stok_minimum" class="dark:text-white-light">Batas Stok Minimum</label>
+                <input id="stok_minimum" type="number" name="stok_minimum" value="{{ $barang->stok_minimum }}" class="form-input" placeholder="Contoh: 10" min="0" required />
+            </div>
+
             <button type="submit" class="btn btn-primary !mt-6">Update</button>
         </form>
 

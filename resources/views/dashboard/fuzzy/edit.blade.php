@@ -7,15 +7,15 @@
 
         <div class="mb-5 flex items-center justify-between">
             <h5 class="text-lg font-semibold dark:text-white-light">
-                Edit Traning
+                Edit Data Fuzzy
             </h5>
 
-            <a href="{{ route('traning.index') }}" class="btn btn-primary">
+            <a href="{{ route('fuzzy.index') }}" class="btn btn-primary">
                 Kembali
             </a>
         </div>
 
-        <form action="{{ route('traning.update', $traning->id) }}" method="POST">
+        <form action="{{ route('fuzzy.update', $fuzzy->id) }}" method="POST">
             @csrf
             @method('PUT')
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -24,7 +24,7 @@
                     <select id="id_barang" name="id_barang" class="form-select text-white-dark" required>
                         <option value="">Pilih Barang</option>
                         @foreach ($barang as $item)
-                            <option value="{{ $item->id }}" {{ $traning->id_barang == $item->id ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}" {{ $fuzzy->id_barang == $item->id ? 'selected' : '' }}>
                                 {{ $item->nama_barang }}
                             </option>
                         @endforeach
@@ -32,19 +32,19 @@
                 </div>
                 <div class="mb-5">
                     <label for="tanggal" class="dark:text-white-light">Tanggal</label>
-                    <input id="tanggal" type="date" name="tanggal" value="{{ $traning->tanggal }}" class="form-input" required />
+                    <input id="tanggal" type="date" name="tanggal" value="{{ $fuzzy->tanggal }}" class="form-input" required />
                 </div>
                 <div class="mb-5">
-                    <label for="persediaan_awal" class="dark:text-white-light">Persediaan Awal</label>
-                    <input id="persediaan_awal" type="number" name="persediaan_awal" value="{{ $traning->persediaan_awal }}" class="form-input" placeholder="0" required />
+                    <label for="permintaan" class="dark:text-white-light">Permintaan</label>
+                    <input id="permintaan" type="number" name="permintaan" value="{{ $fuzzy->permintaan }}" class="form-input" placeholder="0" required />
                 </div>
                 <div class="mb-5">
-                    <label for="pembelian" class="dark:text-white-light">Pembelian</label>
-                    <input id="pembelian" type="number" name="pembelian" value="{{ $traning->pembelian }}" class="form-input" placeholder="0" required />
+                    <label for="stok" class="dark:text-white-light">Stok</label>
+                    <input id="stok" type="number" name="stok" value="{{ $fuzzy->stok }}" class="form-input" placeholder="0" required />
                 </div>
-                <div class="mb-5">
-                    <label for="penjualan" class="dark:text-white-light">Penjualan</label>
-                    <input id="penjualan" type="number" name="penjualan" value="{{ $traning->penjualan }}" class="form-input" placeholder="0" required />
+                <div class="mb-5 md:col-span-2">
+                    <label for="hasil_fuzzy" class="dark:text-white-light">Hasil Fuzzy</label>
+                    <input id="hasil_fuzzy" type="text" name="hasil_fuzzy" value="{{ $fuzzy->hasil_fuzzy }}" class="form-input" placeholder="Hasil perhitungan" required />
                 </div>
             </div>
 

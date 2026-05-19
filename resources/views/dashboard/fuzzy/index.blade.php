@@ -7,11 +7,11 @@
 
         <div class="mb-5 flex items-center justify-between">
             <h5 class="text-lg font-semibold dark:text-white-light">
-                Data Traning
+                Data Fuzzy
             </h5>
 
-            <a href="{{ route('traning.create') }}" class="btn btn-primary">
-                Tambah Traning
+            <a href="{{ route('fuzzy.create') }}" class="btn btn-primary">
+                Tambah Data Fuzzy
             </a>
         </div>
 
@@ -28,27 +28,25 @@
                         <th>No</th>
                         <th>Barang</th>
                         <th>Tanggal</th>
-                        <th>Persediaan Awal</th>
-                        <th>Pembelian</th>
-                        <th>Penjualan</th>
-                        <th>Persediaan Akhir</th>
+                        <th>Permintaan</th>
+                        <th>Stok</th>
+                        <th>Hasil Fuzzy</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($traning as $item)
+                    @forelse ($fuzzies as $item)
                     <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                         <td>{{ $loop->iteration }}</td>
                         <td class="text-black dark:text-white">{{ $item->barang->nama_barang }}</td>
                         <td>{{ $item->tanggal }}</td>
-                        <td>{{ $item->persediaan_awal }}</td>
-                        <td>{{ $item->pembelian }}</td>
-                        <td>{{ $item->penjualan }}</td>
-                        <td>{{ $item->persediaan_akhir }}</td>
+                        <td>{{ $item->permintaan }}</td>
+                        <td>{{ $item->stok }}</td>
+                        <td>{{ $item->hasil_fuzzy }}</td>
                         <td class="text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{{ route('traning.edit', $item->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                                <form action="{{ route('traning.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin hapus data?')">
+                                <a href="{{ route('fuzzy.edit', $item->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                <form action="{{ route('fuzzy.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin hapus data?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
@@ -58,7 +56,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center">Data traning kosong</td>
+                        <td colspan="7" class="text-center">Data fuzzy kosong</td>
                     </tr>
                     @endforelse
                 </tbody>

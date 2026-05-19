@@ -20,8 +20,14 @@ public function index()
 
     public function store(Request $request)
     {
+        $request->validate([
+            'nama_barang'  => 'required|string|max:255',
+            'stok_minimum' => 'required|integer|min:0',
+        ]);
+
         Barang::create([
-            'nama_barang' => $request->nama_barang
+            'nama_barang'  => $request->nama_barang,
+            'stok_minimum' => $request->stok_minimum,
         ]);
 
         return redirect()->route('barang.index');
@@ -37,8 +43,14 @@ public function index()
     {
         $barang = Barang::findOrFail($id);
 
+        $request->validate([
+            'nama_barang'  => 'required|string|max:255',
+            'stok_minimum' => 'required|integer|min:0',
+        ]);
+
         $barang->update([
-            'nama_barang' => $request->nama_barang
+            'nama_barang'  => $request->nama_barang,
+            'stok_minimum' => $request->stok_minimum,
         ]);
 
         return redirect()->route('barang.index');

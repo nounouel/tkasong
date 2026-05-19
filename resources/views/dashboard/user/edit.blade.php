@@ -23,8 +23,8 @@
                 <input id="name" type="text" name="name" value="{{ $user->name }}" class="form-input" placeholder="Masukkan Nama" required />
             </div>
             <div class="mb-5">
-                <label for="email" class="dark:text-white-light">Email</label>
-                <input id="email" type="email" name="email" value="{{ $user->email }}" class="form-input" placeholder="Masukkan Email" required />
+                <label for="username" class="dark:text-white-light">Username</label>
+                <input id="username" type="text" name="username" value="{{ $user->username }}" class="form-input" placeholder="Masukkan Username" required />
             </div>
             <div class="mb-5">
                 <label for="password" class="dark:text-white-light">Password (Kosongkan jika tidak ingin mengubah)</label>

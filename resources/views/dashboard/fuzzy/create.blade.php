@@ -7,15 +7,15 @@
 
         <div class="mb-5 flex items-center justify-between">
             <h5 class="text-lg font-semibold dark:text-white-light">
-                Tambah Traning
+                Tambah Data Fuzzy
             </h5>
 
-            <a href="{{ route('traning.index') }}" class="btn btn-primary">
+            <a href="{{ route('fuzzy.index') }}" class="btn btn-primary">
                 Kembali
             </a>
         </div>
 
-        <form action="{{ route('traning.store') }}" method="POST">
+        <form action="{{ route('fuzzy.store') }}" method="POST">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="mb-5">
@@ -32,16 +32,16 @@
                     <input id="tanggal" type="date" name="tanggal" class="form-input" required />
                 </div>
                 <div class="mb-5">
-                    <label for="persediaan_awal" class="dark:text-white-light">Persediaan Awal</label>
-                    <input id="persediaan_awal" type="number" name="persediaan_awal" class="form-input" placeholder="0" required />
+                    <label for="permintaan" class="dark:text-white-light">Permintaan</label>
+                    <input id="permintaan" type="number" name="permintaan" class="form-input" placeholder="0" required />
                 </div>
                 <div class="mb-5">
-                    <label for="pembelian" class="dark:text-white-light">Pembelian</label>
-                    <input id="pembelian" type="number" name="pembelian" class="form-input" placeholder="0" required />
+                    <label for="stok" class="dark:text-white-light">Stok</label>
+                    <input id="stok" type="number" name="stok" class="form-input" placeholder="0" required />
                 </div>
-                <div class="mb-5">
-                    <label for="penjualan" class="dark:text-white-light">Penjualan</label>
-                    <input id="penjualan" type="number" name="penjualan" class="form-input" placeholder="0" required />
+                <div class="mb-5 md:col-span-2">
+                    <label for="hasil_fuzzy" class="dark:text-white-light">Hasil Fuzzy</label>
+                    <input id="hasil_fuzzy" type="text" name="hasil_fuzzy" class="form-input" placeholder="Hasil perhitungan" required />
                 </div>
             </div>
 

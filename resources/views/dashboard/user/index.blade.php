@@ -19,7 +19,7 @@
                         <tr>
                             <th>No</th>
                             <th>Nama</th>
-                            <th>Email</th>
+                            <th>Username</th>
                             <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -28,7 +28,7 @@
                         <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                             <td>{{ $loop->iteration }}</td>
                             <td class="text-black dark:text-white">{{ $item->name }}</td>
-                            <td>{{ $item->email }}</td>
+                            <td>{{ $item->username }}</td>
                             <td class="text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     <a href="{{ route('user.edit', $item->id) }}" class="btn btn-sm btn-warning">Edit</a>

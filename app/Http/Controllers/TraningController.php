@@ -27,6 +27,7 @@ class TraningController extends Controller
     {
         $request->validate([
             'id_barang' => 'required|exists:barang,id',
+            'tanggal' => 'required|date',
             'persediaan_awal' => 'required|integer',
             'pembelian' => 'required|integer',
             'penjualan' => 'required|integer',
@@ -36,6 +37,7 @@ class TraningController extends Controller
 
         Traning::create([
             'id_barang' => $request->id_barang,
+            'tanggal' => $request->tanggal,
             'persediaan_awal' => $request->persediaan_awal,
             'pembelian' => $request->pembelian,
             'penjualan' => $request->penjualan,
@@ -56,6 +58,7 @@ class TraningController extends Controller
     {
         $request->validate([
             'id_barang' => 'required|exists:barang,id',
+            'tanggal' => 'required|date',
             'persediaan_awal' => 'required|integer',
             'pembelian' => 'required|integer',
             'penjualan' => 'required|integer',
@@ -66,6 +69,7 @@ class TraningController extends Controller
 
         $traning->update([
             'id_barang' => $request->id_barang,
+            'tanggal' => $request->tanggal,
             'persediaan_awal' => $request->persediaan_awal,
             'pembelian' => $request->pembelian,
             'penjualan' => $request->penjualan,

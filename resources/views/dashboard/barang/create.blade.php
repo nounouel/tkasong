@@ -23,6 +23,11 @@
                 <input id="nama_barang" type="text" name="nama_barang" class="form-input" placeholder="Masukkan Nama Barang" required />
             </div>
 
+            <div class="mb-5">
+                <label for="stok_minimum" class="dark:text-white-light">Batas Stok Minimum</label>
+                <input id="stok_minimum" type="number" name="stok_minimum" class="form-input" placeholder="Contoh: 10" min="0" value="10" required />
+            </div>
+
             <button type="submit" class="btn btn-primary !mt-6">Simpan</button>
         </form>
 

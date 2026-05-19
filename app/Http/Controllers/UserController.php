@@ -25,13 +25,13 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required',
-            'email' => 'required|email|unique:users,email',
+            'username' => 'required|unique:users,username',
             'password' => 'required|min:6',
         ]);
 
         User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'username' => $request->username,
             'password' => bcrypt($request->password),
         ]);
 
@@ -48,13 +48,13 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . $id,
+            'username' => 'required|unique:users,username,' . $id,
         ]);
 
         $user = User::findOrFail($id);
         $data = [
             'name' => $request->name,
-            'email' => $request->email,
+            'username' => $request->username,
         ];
 
         if ($request->password) {

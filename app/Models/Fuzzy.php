@@ -4,17 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Traning extends Model
+class Fuzzy extends Model
 {
-    protected $table = 'traning';
+    protected $table = 'fuzzies';
 
     protected $fillable = [
         'id_barang',
-        'tanggal',
-        'persediaan_awal',
-        'pembelian',
-        'penjualan',
-        'persediaan_akhir'
+        'permintaan',
+        'stok',
+        'hasil_fuzzy',
+        'tanggal'
     ];
 
     public function barang()
