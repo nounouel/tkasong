@@ -10,7 +10,10 @@ return new class extends Migration
     {
         Schema::create('barang', function (Blueprint $table) {
             $table->id();
-            $table->string('nama_barang');
+            $table->string('nama_barang', 100);
+            $table->string('satuan', 20);
+            $table->integer('stok_minimum')->default(0);
+            $table->integer('reorder_point')->default(0);
             $table->timestamps();
         });
     }

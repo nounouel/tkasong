@@ -4,18 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Traning extends Model
+class Rekomendasi extends Model
 {
-    protected $table = 'traning';
+    protected $table = 'rekomendasi';
 
     protected $fillable = [
         'id_barang',
-        'tahun',
-        'bulan',
-        'persediaan_awal',
-        'pembelian',
-        'penjualan',
-        'persediaan_akhir'
+        'stok_saat_ini',
+        'rata_penjualan',
+        'jumlah_direkomendasikan',
+        'status',
+        'dihasilkan_pada',
     ];
 
     public function barang()

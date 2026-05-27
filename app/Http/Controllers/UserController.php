@@ -10,9 +10,13 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::all();
+        $search = $request->input('search');
+        $users = User::when($search, function ($query, $search) {
+            return $query->where('name', 'like', "%{$search}%")
+                         ->orWhere('username', 'like', "%{$search}%");
+        })->paginate(10)->withQueryString();
         return view('dashboard.user.index', compact('users'));
     }
 

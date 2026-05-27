@@ -9,8 +9,8 @@ class Barang extends Model
     protected $table = 'barang';
 
     protected $fillable = [
-        'nama_barang',
-        'stok_minimum',
+        'kategori', 'nama_barang', 'satuan',
+        'stok_minimum', 'reorder_point'
     ];
 
     public function traning()

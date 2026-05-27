@@ -4,18 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Traning extends Model
+class PenjualanAgregat extends Model
 {
-    protected $table = 'traning';
+    protected $table = 'penjualan_agregat';
 
     protected $fillable = [
         'id_barang',
-        'tahun',
-        'bulan',
-        'persediaan_awal',
-        'pembelian',
-        'penjualan',
-        'persediaan_akhir'
+        'tanggal',
+        'total_terjual',
     ];
 
     public function barang()

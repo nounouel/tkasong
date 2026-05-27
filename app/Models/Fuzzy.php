@@ -13,6 +13,7 @@ class Fuzzy extends Model
         'permintaan',
         'stok',
         'hasil_fuzzy',
+        'nilai_crisp',
         'tanggal'
     ];
 

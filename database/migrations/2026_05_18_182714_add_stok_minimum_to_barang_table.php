@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('barang', function (Blueprint $table) {
-            $table->integer('stok_minimum')->default(10)->after('nama_barang');
-        });
+        // stok_minimum is created directly in 2026_05_13_064944_create_barang_table.php
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('barang', function (Blueprint $table) {
-            $table->dropColumn('stok_minimum');
-        });
+        // No action needed as stok_minimum is dropped when dropping the whole table
     }
 };

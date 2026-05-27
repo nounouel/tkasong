@@ -2,9 +2,15 @@
 @section('content')
     <div class="animate__animated p-6" :class="[$store.app.animation]">
         <div class="panel h-full w-full">
-            <div class="mb-5 flex items-center justify-between">
+            <div class="mb-5 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <h5 class="text-lg font-semibold dark:text-white-light">Data User</h5>
-                <a href="{{ route('user.create') }}" class="btn btn-primary">Tambah User</a>
+                <div class="flex items-center gap-2">
+                    <form action="{{ route('user.index') }}" method="GET" class="flex gap-2">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari..." class="form-input w-48 sm:w-auto" />
+                        <button type="submit" class="btn btn-secondary">Cari</button>
+                    </form>
+                    <a href="{{ route('user.create') }}" class="btn btn-primary">Tambah User</a>
+                </div>
             </div>
 
             @if(session('success'))
@@ -26,7 +32,7 @@
                     <tbody>
                         @forelse ($users as $item)
                         <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $users->firstItem() ? $users->firstItem() + $loop->index : $loop->iteration }}</td>
                             <td class="text-black dark:text-white">{{ $item->name }}</td>
                             <td>{{ $item->username }}</td>
                             <td class="text-center">
@@ -47,6 +53,10 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            
+            <div class="mt-4">
+                {{ $users->links() }}
             </div>
         </div>
     </div>

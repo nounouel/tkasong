@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('traning', function (Blueprint $table) {
-            $table->date('tanggal')->after('id_barang')->nullable();
+            $table->integer('tahun')->after('id_barang')->nullable();
+            $table->integer('bulan')->after('tahun')->nullable();
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('traning', function (Blueprint $table) {
-            $table->dropColumn('tanggal');
+            $table->dropColumn(['tahun', 'bulan']);
         });
     }
 };

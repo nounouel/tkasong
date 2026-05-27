@@ -61,9 +61,9 @@
     </div>
 
     {{-- ============================================================ --}}
-    {{-- BARIS BAWAH: GRAFIK + TABEL BARANG BAWAH MINIMUM --}}
+    {{-- GRAFIK & TABEL BARANG BAWAH MINIMUM --}}
     {{-- ============================================================ --}}
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6">
 
         {{-- Grafik Bar: Top 5 Barang Paling Menipis --}}
         <div class="panel">
@@ -77,7 +77,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6M4 20h16"/>
                     </svg>
-                    <p class="text-sm">Belum ada data traning</p>
+                    <p class="text-sm">Belum ada data transaksi</p>
                 </div>
             @else
                 <div x-data="{}" x-init="renderChart()">
@@ -96,19 +96,26 @@
                 function renderChart() {
                     if (typeof ApexCharts === 'undefined' || !document.getElementById('barChart')) return;
 
-                    var colors = top5Data.stok.map(function(val, i) {
-                        return val < top5Data.minimum[i] ? '#e7515a' : '#00ab55';
-                    });
-
                     var options = {
                         series: [
                             {
                                 name: 'Stok Saat Ini',
-                                data: top5Data.stok,
+                                data: top5Data.stok.map(function(val, i) {
+                                    return {
+                                        x: top5Data.labels[i],
+                                        y: val,
+                                        fillColor: Number(val) < Number(top5Data.minimum[i]) ? '#e7515a' : '#00ab55'
+                                    };
+                                }),
                             },
                             {
                                 name: 'Batas Minimum',
-                                data: top5Data.minimum,
+                                data: top5Data.minimum.map(function(val, i) {
+                                    return {
+                                        x: top5Data.labels[i],
+                                        y: val
+                                    };
+                                }),
                                 type: 'line',
                             }
                         ],
@@ -122,11 +129,11 @@
                             bar: {
                                 horizontal: true,
                                 borderRadius: 6,
-                                distributed: true,
+                                distributed: false,
                                 dataLabels: { position: 'bottom' },
                             },
                         },
-                        colors: colors,
+                        colors: ['#00ab55', '#e7515a'],
                         dataLabels: {
                             enabled: true,
                             style: { fontSize: '12px', colors: ['#fff'] },
@@ -210,6 +217,9 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+                <div class="mt-4">
+                    {{ $barangBawahMinimum->links() }}
                 </div>
             @endif
         </div>

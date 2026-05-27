@@ -25,8 +25,23 @@
             </div>
 
             <div class="mb-5">
+                <label for="satuan" class="dark:text-white-light">Satuan</label>
+                <select id="satuan" name="satuan" class="form-select text-white-dark" required>
+                    <option value="">Pilih Satuan</option>
+                    <option value="kg" {{ $barang->satuan == 'kg' ? 'selected' : '' }}>kg</option>
+                    <option value="liter" {{ $barang->satuan == 'liter' ? 'selected' : '' }}>liter</option>
+                    <option value="pcs" {{ $barang->satuan == 'pcs' ? 'selected' : '' }}>pcs</option>
+                </select>
+            </div>
+
+            <div class="mb-5">
                 <label for="stok_minimum" class="dark:text-white-light">Batas Stok Minimum</label>
                 <input id="stok_minimum" type="number" name="stok_minimum" value="{{ $barang->stok_minimum }}" class="form-input" placeholder="Contoh: 10" min="0" required />
+            </div>
+
+            <div class="mb-5">
+                <label for="reorder_point" class="dark:text-white-light">Reorder Point (ROP)</label>
+                <input id="reorder_point" type="number" name="reorder_point" value="{{ $barang->reorder_point }}" class="form-input" placeholder="Contoh: 20" min="0" required />
             </div>
 
             <button type="submit" class="btn btn-primary !mt-6">Update</button>

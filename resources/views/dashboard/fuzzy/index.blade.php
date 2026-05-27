@@ -5,14 +5,19 @@
 
     <div class="panel h-full w-full">
 
-        <div class="mb-5 flex items-center justify-between">
+        <div class="mb-5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <h5 class="text-lg font-semibold dark:text-white-light">
                 Data Fuzzy
             </h5>
-
-            <a href="{{ route('fuzzy.create') }}" class="btn btn-primary">
-                Tambah Data Fuzzy
-            </a>
+            <div class="flex items-center gap-2">
+                <form action="{{ route('fuzzy.index') }}" method="GET" class="flex gap-2">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari..." class="form-input w-48 sm:w-auto" />
+                    <button type="submit" class="btn btn-secondary">Cari</button>
+                </form>
+                <a href="{{ route('fuzzy.create') }}" class="btn btn-primary">
+                    Tambah Data Fuzzy
+                </a>
+            </div>
         </div>
 
         @if(session('success'))
@@ -37,7 +42,7 @@
                 <tbody>
                     @forelse ($fuzzies as $item)
                     <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
-                        <td>{{ $loop->iteration }}</td>
+                        <td>{{ $fuzzies->firstItem() ? $fuzzies->firstItem() + $loop->index : $loop->iteration }}</td>
                         <td class="text-black dark:text-white">{{ $item->barang->nama_barang }}</td>
                         <td>{{ $item->tanggal }}</td>
                         <td>{{ $item->permintaan }}</td>
@@ -61,6 +66,10 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        
+        <div class="mt-4">
+            {{ $fuzzies->links() }}
         </div>
 
     </div>
