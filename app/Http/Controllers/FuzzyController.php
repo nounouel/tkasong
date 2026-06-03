@@ -144,57 +144,7 @@ class FuzzyController extends Controller
             'steps' => $steps
         ]);
     }   
-    public function getRekomendasi(Request $request)
-    {
-        $penjualan = $request->input('penjualan'); // misal 85
-        $stok      = $request->input('stok');      // misal 120
 
-        $fuzzy = new FuzzyTsukamotoService();
-        $rekomendasi = $fuzzy->hitungRekomendasi($penjualan, $stok);
-
-        return response()->json([
-            'penjualan' => $penjualan,
-            'stok'      => $stok,
-            'rekomendasi_pembelian' => $rekomendasi
-        ]);
-    }
-
-
-
-    // public function detail(string $id)
-    // {
-    //     $fuzzy = \App\Models\Fuzzy::with('barang')->findOrFail($id);
-
-    //     $steps = $this->getFuzzySteps(
-    //         $fuzzy->permintaan,
-    //         $fuzzy->stok
-    //     );
-
-    //     $domains = $this->getDynamicDomains($fuzzy->id_barang);
-    //     $min_max_data = $this->getDynamicMinMax($fuzzy->id_barang);
-
-    //     $tahun = date('Y', strtotime($fuzzy->tanggal));
-    //     $bulan = date('n', strtotime($fuzzy->tanggal));
-
-    //     $dynData = $this->getDynamicTrainingData($fuzzy->id_barang, $tahun, $bulan, $fuzzy->permintaan, $fuzzy->stok);
-    //     $training_data = $dynData['training_data'];
-
-    //     $steps['nama_barang'] = $fuzzy->barang->nama_barang;
-    //     $steps['training_data'] = $training_data;
-    //     $steps['min_max'] = $min_max_data;
-
-    //     return response()->json([
-    //         'status' => 'success',
-    //         'nama_barang' => $fuzzy->barang->nama_barang,
-    //         'dihasilkan_pada' => $fuzzy->tanggal,
-    //         'permintaan' => $fuzzy->permintaan,
-    //         'stok' => $fuzzy->stok,
-    //         'hasil_fuzzy' => $steps['kategori'],
-    //         'nilai_crisp' => $fuzzy->nilai_crisp,
-    //         'steps' => $steps,
-    //         'domains' => $domains
-    //     ]);
-    // }
 public function detail(string $id)
 {
     $fuzzy = Fuzzy::with('barang')->findOrFail($id);
@@ -209,6 +159,8 @@ public function detail(string $id)
 
     return response()->json([
         'status' => 'success',
+        'id' => $fuzzy->id,
+        'status_fuzzy' => $fuzzy->status,
         'nama_barang' => $fuzzy->barang->nama_barang,
         'dihasilkan_pada' => $fuzzy->tanggal,
         'permintaan' => $fuzzy->rata_rata_penjualan_perhari,
@@ -218,6 +170,34 @@ public function detail(string $id)
         'steps' => $hasil,
         'domains' => $domains,
     ]);
+}
+
+public function updateStatus(Request $request, string $id)
+{
+    $request->validate([
+        'status' => 'required|in:pending,diproses,dibatalkan',
+        'jumlah_masuk' => 'required_if:status,diproses|nullable|integer|min:1',
+        'tanggal_masuk' => 'required_if:status,diproses|nullable|date',
+        'keterangan_masuk' => 'nullable|string',
+    ]);
+
+    $fuzzy = Fuzzy::findOrFail($id);
+    $oldStatus = $fuzzy->status;
+    $fuzzy->status = $request->status;
+    $fuzzy->save();
+
+    if ($request->status === 'diproses' && $oldStatus !== 'diproses') {
+        \App\Models\TransaksiMasuk::create([
+            'id_barang' => $fuzzy->id_barang,
+            'tanggal'   => $request->tanggal_masuk ?? now()->toDateString(),
+            'jumlah'    => $request->jumlah_masuk,
+            'keterangan' => $request->keterangan_masuk ?: 'Pembelian dari rekomendasi Fuzzy (' . $fuzzy->barang->nama_barang . ')',
+        ]);
+        
+        return redirect()->route('fuzzy.index')->with('success', 'Rekomendasi berhasil diproses dan transaksi masuk ditambahkan.');
+    }
+
+    return redirect()->route('fuzzy.index')->with('success', 'Status rekomendasi berhasil diperbarui.');
 }
     public function getBarangDetail($id)
     {

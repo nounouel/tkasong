@@ -10,6 +10,12 @@
     nilaiCrisp: 0,
     domains: null,
     steps: null,
+    idRec: null,
+    statusFuzzy: 'pending',
+    jumlahProses: 0,
+    tanggalProses: '',
+    keteranganProses: '',
+    prosesStatusSelect: 'diproses',
     
     minPenjualan() { return this.domains ? this.domains.penjualan.min : 0; },
     maxPenjualan() { return this.domains ? this.domains.penjualan.max : 0; },
@@ -41,12 +47,20 @@
             let response = await fetch('/fuzzy/detail/' + id);
             let data = await response.json();
             if (data.status === 'success') {
+                this.idRec = data.id;
+                this.statusFuzzy = data.status_fuzzy;
                 this.namaBarang = data.nama_barang;
                 this.permintaan = data.permintaan;
                 this.stok = data.stok;
                 this.nilaiCrisp = data.nilai_crisp;
                 this.domains = data.domains;
                 this.steps = data.steps;
+
+                this.jumlahProses = Math.round(data.nilai_crisp);
+                this.tanggalProses = new Date().toISOString().split('T')[0];
+                this.keteranganProses = 'Pembelian dari rekomendasi Fuzzy (' + data.nama_barang + ')';
+                this.prosesStatusSelect = 'diproses';
+
                 this.isOpen = true;
             } else {
                 alert(data.message || 'Gagal mengambil detail perhitungan.');
@@ -98,6 +112,7 @@
                         <th>Penjualan Rata-rata</th>
                         <th>Kategori Fuzzy</th>
                         <th class="text-center">Rekomendasi Pembelian</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -123,7 +138,19 @@
                             {{ number_format($item->jumlah_direkomendasikan) }}
                         </td>
                         <td class="text-center">
-                            <div class="flex items-center justify-center">
+                            @if($item->status === 'diproses')
+                                <span class="badge bg-success">Diproses</span>
+                            @elseif($item->status === 'dibatalkan')
+                                <span class="badge bg-danger">Dibatalkan</span>
+                            @else
+                                <span class="badge bg-warning">Pending</span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" @click="showDetail({{ $item->id }})" class="btn btn-sm btn-outline-primary">
+                                    Detail
+                                </button>
                                 <form action="{{ route('fuzzy.destroy', $item->id) }}"
                                       method="POST"
                                       onsubmit="return confirm('Yakin hapus data?')">
@@ -138,7 +165,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center">Tidak ada barang yang berada di bawah Reorder Point (ROP) saat ini.</td>
+                        <td colspan="10" class="text-center">Tidak ada barang yang berada di bawah Reorder Point (ROP) saat ini.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -173,6 +200,89 @@
                 <div class="p-6 overflow-y-auto max-h-[80vh] space-y-6">
                     <template x-if="steps">
                         <div class="space-y-6">
+                            
+                            <!-- Section 0: Tindak Lanjut / Status Rekomendasi -->
+                            <div class="panel bg-[#fbfbfb] dark:bg-[#121c2c] border border-gray-200 dark:border-gray-800 rounded-lg p-5">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <h4 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                            </svg>
+                                            Status & Tindak Lanjut Rekomendasi
+                                        </h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            Kelola status rekomendasi pembelian barang ini
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Status Saat Ini:</span>
+                                        <template x-if="statusFuzzy === 'pending'">
+                                            <span class="badge bg-warning text-white font-bold px-2.5 py-1 text-xs">Pending</span>
+                                        </template>
+                                        <template x-if="statusFuzzy === 'diproses'">
+                                            <span class="badge bg-success text-white font-bold px-2.5 py-1 text-xs">Diproses</span>
+                                        </template>
+                                        <template x-if="statusFuzzy === 'dibatalkan'">
+                                            <span class="badge bg-danger text-white font-bold px-2.5 py-1 text-xs">Dibatalkan</span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Action Form -->
+                                <template x-if="statusFuzzy === 'pending'">
+                                    <form :action="'/fuzzy/update-status/' + idRec" method="POST" class="mt-5 pt-4 border-t border-gray-200 dark:border-gray-800 space-y-4">
+                                        @csrf
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tindak Lanjut:</label>
+                                                <div class="flex items-center gap-4">
+                                                    <label class="inline-flex items-center cursor-pointer">
+                                                        <input type="radio" name="status" value="diproses" x-model="prosesStatusSelect" class="form-radio text-success" />
+                                                        <span class="ml-2 text-sm text-gray-800 dark:text-gray-200 font-semibold text-success">Proses Pembelian</span>
+                                                    </label>
+                                                    <label class="inline-flex items-center cursor-pointer">
+                                                        <input type="radio" name="status" value="dibatalkan" x-model="prosesStatusSelect" class="form-radio text-danger" />
+                                                        <span class="ml-2 text-sm text-gray-800 dark:text-gray-200 font-semibold text-danger">Batalkan Rekomendasi</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fields if processed -->
+                                        <div x-show="prosesStatusSelect === 'diproses'" x-transition class="space-y-4 bg-white dark:bg-[#0e1726] p-4 rounded-lg border border-success/30">
+                                            <h5 class="text-sm font-bold text-success">Detail Transaksi Masuk</h5>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Jumlah Pembelian:</label>
+                                                    <input type="number" name="jumlah_masuk" x-model="jumlahProses" class="form-input text-sm" min="1" :required="prosesStatusSelect === 'diproses'" />
+                                                    <p class="text-[10px] text-gray-500 mt-1">Rekomendasi Fuzzy: <span class="font-bold" x-text="Math.round(nilaiCrisp)"></span></p>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Tanggal Transaksi:</label>
+                                                    <input type="date" name="tanggal_masuk" x-model="tanggalProses" class="form-input text-sm" :required="prosesStatusSelect === 'diproses'" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Keterangan:</label>
+                                                    <input type="text" name="keterangan_masuk" x-model="keteranganProses" class="form-input text-sm" placeholder="Keterangan transaksi" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end pt-2">
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                Simpan Status
+                                            </button>
+                                        </div>
+                                    </form>
+                                </template>
+
+                                <template x-if="statusFuzzy !== 'pending'">
+                                    <div class="mt-4 text-xs text-gray-500 dark:text-gray-400 italic">
+                                        Rekomendasi ini telah ditindaklanjuti dan statusnya terkunci.
+                                    </div>
+                                </template>
+                            </div>
                             
                             <!-- Section 1: Data Input & Hasil -->
                             <div class="space-y-3">

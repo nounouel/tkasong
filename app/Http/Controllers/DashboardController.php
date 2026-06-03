@@ -34,11 +34,21 @@ class DashboardController extends Controller
         $totalKeluar = DB::table('transaksi_keluar')->sum('jumlah');
 
         // --- Grafik: Top 5 barang yang paling menipis (persediaan_akhir terkecil) ---
-        $top5Menipis = Barang::leftJoinSub($stokMasuk, 'masuk', 'barang.id', '=', 'masuk.id_barang')
+        $top5Menipis = Barang::with('kategoriRelation')
+            ->leftJoinSub($stokMasuk, 'masuk', 'barang.id', '=', 'masuk.id_barang')
             ->leftJoinSub($stokKeluar, 'keluar', 'barang.id', '=', 'keluar.id_barang')
-            ->select('barang.id', 'barang.nama_barang', 'barang.stok_minimum')
+            ->select('barang.*')
             ->selectRaw('CAST(COALESCE(masuk.total_masuk, 0) - COALESCE(keluar.total_keluar, 0) AS SIGNED) as persediaan_akhir')
             ->orderBy('persediaan_akhir', 'asc')
+            ->limit(5)
+            ->get();
+
+        // --- Grafik: Top 5 barang paling banyak terjual ---
+        $top5Terjual = Barang::with('kategoriRelation')
+            ->joinSub($stokKeluar, 'keluar', 'barang.id', '=', 'keluar.id_barang')
+            ->select('barang.*')
+            ->selectRaw('CAST(keluar.total_keluar AS SIGNED) as total_terjual')
+            ->orderBy('total_terjual', 'desc')
             ->limit(5)
             ->get();
 
@@ -47,7 +57,8 @@ class DashboardController extends Controller
             'jumlahBawahMinimum',
             'totalMasuk',
             'totalKeluar',
-            'top5Menipis'
+            'top5Menipis',
+            'top5Terjual'
         ));
     }
 }

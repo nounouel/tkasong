@@ -9,6 +9,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FuzzyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PenjualanAgregatController;
+use App\Http\Controllers\KategoriController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -30,5 +31,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('fuzzy/predict', [FuzzyController::class, 'predict'])->name('fuzzy.predict');
     Route::get('fuzzy/detail/{id}', [FuzzyController::class, 'detail'])->name('fuzzy.detail');
     Route::get('fuzzy/barang-detail/{id}', [FuzzyController::class, 'getBarangDetail'])->name('fuzzy.barang-detail');
+    Route::post('fuzzy/update-status/{id}', [FuzzyController::class, 'updateStatus'])->name('fuzzy.update-status');
+    Route::resource('kategori', KategoriController::class);
     Route::resource('fuzzy', FuzzyController::class);
 });

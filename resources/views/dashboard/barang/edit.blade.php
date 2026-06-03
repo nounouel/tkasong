@@ -25,6 +25,16 @@
             </div>
 
             <div class="mb-5">
+                <label for="id_kategori" class="dark:text-white-light">Kategori Barang</label>
+                <select id="id_kategori" name="id_kategori" class="form-select text-white-dark">
+                    <option value="">Pilih Kategori (Opsional)</option>
+                    @foreach ($kategori as $kat)
+                        <option value="{{ $kat->id }}" {{ $barang->id_kategori == $kat->id ? 'selected' : '' }}>{{ $kat->nama_kategori }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-5">
                 <label for="satuan" class="dark:text-white-light">Satuan</label>
                 <select id="satuan" name="satuan" class="form-select text-white-dark" required>
                     <option value="">Pilih Satuan</option>

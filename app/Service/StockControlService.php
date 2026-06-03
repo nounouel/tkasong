@@ -78,25 +78,6 @@ class StockControlService
     }
 
     /**
-     * Proses agregasi penjualan harian (dipanggil oleh command atau event)
-     * Menghitung total penjualan per barang per hari dari tabel detail
-     */
-    public function agregasiPenjualanHarian($tanggal = null)
-    {
-        $tanggal = $tanggal ?: Carbon::yesterday()->toDateString();
-
-        // Ambil semua detail penjualan pada tanggal tersebut dari transaksi_keluar
-        $penjualanPerBarang = TransaksiKeluar::where('tanggal', $tanggal)
-            ->select('id_barang', DB::raw('SUM(jumlah) as total'))
-            ->groupBy('id_barang')
-            ->get();
-
-        foreach ($penjualanPerBarang as $item) {
-            PenjualanAgregat::syncAgregat($item->id_barang, $tanggal);
-        }
-    }
-
-    /**
      * Cek kondisi stok terhadap ROP untuk satu barang, jika perlu hasil fuzzy
      * @param Barang $barang
      * @return array|null
@@ -109,12 +90,12 @@ class StockControlService
         $latestAgregat = PenjualanAgregat::where('id_barang', $barang->id)
             ->orderBy('tanggal', 'desc')
             ->first();
-        $reorderPoint = $latestAgregat ? $latestAgregat->reorder_point : 10;
+        $reorderPoint = $latestAgregat ? $latestAgregat->reorder_point : ($barang->stok_minimum ?? 10);
 
         // 1. Bandingkan dengan ROP
         if ($stokAktual > $reorderPoint) {
             // Hapus rekomendasi pending/stale yang sudah aman stoknya
-            Fuzzy::where('id_barang', $barang->id)->delete();
+            Fuzzy::where('id_barang', $barang->id)->where('status', 'pending')->delete();
             return null; // stok aman, tidak perlu rekomendasi
         }
 
@@ -139,18 +120,42 @@ class StockControlService
             $kategori = 'Banyak';
         }
 
-        $rekom = Fuzzy::updateOrCreate(
-            [
-                'id_barang' => $barang->id,
-                'tanggal'   => now()->toDateString(),
-            ],
-            [
+        $existing = Fuzzy::where('id_barang', $barang->id)
+            ->where('tanggal', now()->toDateString())
+            ->first();
+
+        if ($existing) {
+            // Jika statusnya sudah diproses atau dibatalkan, jangan ditimpa agar datanya tidak berubah secara otomatis
+            if ($existing->status !== 'pending') {
+                return [
+                    'id_rekomendasi' => $existing->id,
+                    'barang'         => $barang->nama_barang,
+                    'stok_saat_ini'  => $existing->stok,
+                    'reorder_point'  => $reorderPoint,
+                    'rata_penjualan' => $existing->permintaan,
+                    'rekomendasi'    => $existing->nilai_crisp,
+                ];
+            }
+            
+            // Jika pending, update nilainya
+            $existing->update([
                 'stok'        => $stokAktual,
                 'permintaan'  => $rataPenjualan,
                 'nilai_crisp' => (int) round($rekomendasiJumlah),
                 'hasil_fuzzy' => $kategori,
-            ]
-        );
+            ]);
+            $rekom = $existing;
+        } else {
+            $rekom = Fuzzy::create([
+                'id_barang' => $barang->id,
+                'tanggal'   => now()->toDateString(),
+                'stok'        => $stokAktual,
+                'permintaan'  => $rataPenjualan,
+                'nilai_crisp' => (int) round($rekomendasiJumlah),
+                'hasil_fuzzy' => $kategori,
+                'status'      => 'pending',
+            ]);
+        }
 
         return [
             'id_rekomendasi' => $rekom->id,

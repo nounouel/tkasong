@@ -70,7 +70,13 @@ class DashboardTest extends TestCase
         $this->assertTrue($barangBawahMinimum->contains('nama_barang', 'Beras Pandan wangi'));
         $this->assertFalse($barangBawahMinimum->contains('nama_barang', 'Gula Semut'));
 
+        $top5Terjual = $response->viewData('top5Terjual');
+        $this->assertCount(2, $top5Terjual);
+        $this->assertEquals('Beras Pandan wangi', $top5Terjual->first()->nama_barang);
+        $this->assertEquals(60, $top5Terjual->first()->total_terjual);
+
         $response->assertSee('Total Stok Masuk');
         $response->assertSee('Total Stok Keluar');
+        $response->assertSee('Top 5 Barang Paling Banyak Terjual');
     }
 }

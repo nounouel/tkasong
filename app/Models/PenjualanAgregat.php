@@ -22,54 +22,9 @@ class PenjualanAgregat extends Model
         return $this->belongsTo(Barang::class, 'id_barang');
     }
 
-    /**
-     * Hitung stok terakhir barang pada tanggal tersebut berdasarkan
-     * akumulasi transaksi masuk dikurangi akumulasi transaksi keluar.
-     */
     public function getStokTerakhirAttribute()
     {
-        if (isset($this->attributes['stok_terakhir'])) {
-            return $this->attributes['stok_terakhir'];
-        }
-
-        $totalMasuk = \Illuminate\Support\Facades\DB::table('transaksi_masuk')
-            ->where('id_barang', $this->id_barang)
-            ->where('tanggal', '<=', $this->tanggal)
-            ->sum('jumlah');
-
-        $totalKeluar = \Illuminate\Support\Facades\DB::table('transaksi_keluar')
-            ->where('id_barang', $this->id_barang)
-            ->where('tanggal', '<=', $this->tanggal)
-            ->sum('jumlah');
-
-        return $totalMasuk - $totalKeluar;
-    }
-
-    /**
-     * Hitung rata-rata penjualan harian barang terkait sejak transaksi pertama (terhitung dari tanggal record tersebut).
-     */
-    public function getRataPenjualanHarianAttribute()
-    {
-        if (isset($this->attributes['rata_rata_penjualan_perhari']) && floatval($this->attributes['rata_rata_penjualan_perhari']) > 0) {
-            return floatval($this->attributes['rata_rata_penjualan_perhari']);
-        }
-
-        $oldestDate = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
-            ->where('id_barang', $this->id_barang)
-            ->min('tanggal');
-
-        $minTanggal = $oldestDate ?: $this->tanggal;
-        if ($this->tanggal < $minTanggal) {
-            $minTanggal = $this->tanggal;
-        }
-        $daysSpan = \Carbon\Carbon::parse($minTanggal)->diffInDays(\Carbon\Carbon::parse($this->tanggal)) + 1;
-
-        $totalSoldAccumulated = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
-            ->where('id_barang', $this->id_barang)
-            ->where('tanggal', '<=', $this->tanggal)
-            ->sum('total_terjual');
-
-        return round($daysSpan > 0 ? ($totalSoldAccumulated / $daysSpan) : 0, 2);
+        return $this->attributes['stok_terakhir'] ?? 0;
     }
 
     /**
@@ -115,7 +70,13 @@ class PenjualanAgregat extends Model
         $d = (int) $totalTerjual;
         $L = 2; // Lead Time 2 hari
         $rop = ($d * $L) + $ss;
-
+// dd([
+    
+//     'ss' => $ss,
+//     'demand' => $d,
+//     'total_terjual' => $d,
+//                     'reorder_point' => $rop
+// ]);
         if ($d > 0) {
             // Update or insert basic record
             \Illuminate\Support\Facades\DB::table('penjualan_agregat')->updateOrInsert(

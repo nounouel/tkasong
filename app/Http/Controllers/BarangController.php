@@ -10,7 +10,7 @@ class BarangController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $barang = Barang::when($search, function ($query, $search) {
+        $barang = Barang::with('kategoriRelation')->when($search, function ($query, $search) {
             return $query->where('nama_barang', 'like', "%{$search}%");
         })->paginate(10)->withQueryString();
 
@@ -18,19 +18,22 @@ class BarangController extends Controller
     }
     public function create()
     {
-        return view('dashboard.barang.create');
+        $kategori = \App\Models\Kategori::all();
+        return view('dashboard.barang.create', compact('kategori'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'nama_barang'   => 'required|string|max:100',
+            'id_kategori'   => 'nullable|exists:kategori,id',
             'satuan'        => 'required|string|max:20',
             'stok_minimum'  => 'required|integer|min:0',
         ]);
 
         Barang::create([
             'nama_barang'   => $request->nama_barang,
+            'id_kategori'   => $request->id_kategori,
             'satuan'        => $request->satuan,
             'stok_minimum'  => $request->stok_minimum,
         ]);
@@ -41,7 +44,8 @@ class BarangController extends Controller
     public function edit($id)
     {
         $barang = Barang::findOrFail($id);
-        return view('dashboard.barang.edit', compact('barang'));
+        $kategori = \App\Models\Kategori::all();
+        return view('dashboard.barang.edit', compact('barang', 'kategori'));
     }
 
     public function update(Request $request, $id)
@@ -50,12 +54,14 @@ class BarangController extends Controller
 
         $request->validate([
             'nama_barang'   => 'required|string|max:100',
+            'id_kategori'   => 'nullable|exists:kategori,id',
             'satuan'        => 'required|string|max:20',
             'stok_minimum'  => 'required|integer|min:0',
         ]);
 
         $barang->update([
             'nama_barang'   => $request->nama_barang,
+            'id_kategori'   => $request->id_kategori,
             'satuan'        => $request->satuan,
             'stok_minimum'  => $request->stok_minimum,
         ]);

@@ -9,13 +9,23 @@ class Barang extends Model
     protected $table = 'barang';
 
     protected $fillable = [
-        'kategori', 'nama_barang', 'satuan',
+        'id_kategori', 'nama_barang', 'satuan',
         'stok_minimum'
     ];
 
     public function traning()
     {
         return $this->hasMany(Traning::class, 'id_barang');
+    }
+
+    public function kategoriRelation()
+    {
+        return $this->belongsTo(Kategori::class, 'id_kategori');
+    }
+
+    public function getKategoriAttribute()
+    {
+        return $this->kategoriRelation ? $this->kategoriRelation->nama_kategori : '-';
     }
 
     protected static function booted()
@@ -38,5 +48,18 @@ class Barang extends Model
                 }
             }
         });
+
+        static::created(function ($barang) {
+            // Jalankan cek rekomendasi awal karena barang baru biasanya stoknya 0 (di bawah ROP)
+            app(\App\Service\StockControlService::class)->cekDanRekomendasi($barang);
+        });
+    }
+
+    public function getReorderPointAttribute()
+    {
+        $latestAgregat = \App\Models\PenjualanAgregat::where('id_barang', $this->id)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+        return $latestAgregat ? $latestAgregat->reorder_point : ($this->stok_minimum ?? 10);
     }
 }

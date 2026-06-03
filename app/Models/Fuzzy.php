@@ -15,7 +15,8 @@ class Fuzzy extends Model
         'hasil_fuzzy',
         'nilai_crisp',
         'tanggal',
-        'rata_rata_penjualan_perhari'
+        'rata_rata_penjualan_perhari',
+        'status'
     ];
 
     public function barang()

@@ -63,7 +63,7 @@
     {{-- ============================================================ --}}
     {{-- GRAFIK & TABEL BARANG BAWAH MINIMUM --}}
     {{-- ============================================================ --}}
-    <div class="grid grid-cols-1 gap-6">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
         {{-- Grafik Bar: Top 5 Barang Paling Menipis --}}
         <div class="panel">
@@ -88,7 +88,7 @@
             {{-- Data JSON untuk chart --}}
             <script>
                 var top5Data = {
-                    labels: @json($top5Menipis->pluck('nama_barang')),
+                    labels: @json($top5Menipis->map(fn($item) => $item->nama_barang . ' (' . ($item->kategori ?? '-') . ' - ' . ($item->satuan ?? '-') . ')')),
                     stok: @json($top5Menipis->pluck('persediaan_akhir')),
                     minimum: @json($top5Menipis->pluck('stok_minimum')),
                 };
@@ -169,7 +169,96 @@
             </script>
         </div>
 
-        {{-- Tabel: Barang Di Bawah Minimum --}}
+        {{-- Grafik Bar: Top 5 Barang Paling Banyak Terjual --}}
+        <div class="panel">
+            <div class="mb-5 flex items-center justify-between">
+                <h5 class="text-lg font-semibold dark:text-white-light">Top 5 Barang Paling Banyak Terjual</h5>
+                <span class="badge bg-primary">Terlaris</span>
+            </div>
+
+            @if($top5Terjual->isEmpty())
+                <div class="flex flex-col items-center justify-center py-10 text-white-dark">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6M4 20h16"/>
+                    </svg>
+                    <p class="text-sm">Belum ada data transaksi penjualan</p>
+                </div>
+            @else
+                <div x-data="{}" x-init="renderTopSoldChart()">
+                    <div id="topSoldChart"></div>
+                </div>
+            @endif
+
+            {{-- Data JSON untuk chart --}}
+            <script>
+                var top5TerjualData = {
+                    labels: @json($top5Terjual->map(fn($item) => $item->nama_barang . ' (' . ($item->kategori ?? '-') . ' - ' . ($item->satuan ?? '-') . ')')),
+                    terjual: @json($top5Terjual->pluck('total_terjual')),
+                };
+
+                function renderTopSoldChart() {
+                    if (typeof ApexCharts === 'undefined' || !document.getElementById('topSoldChart')) return;
+
+                    var options = {
+                        series: [
+                            {
+                                name: 'Jumlah Terjual',
+                                data: top5TerjualData.terjual
+                            }
+                        ],
+                        chart: {
+                            type: 'bar',
+                            height: 300,
+                            toolbar: { show: false },
+                            fontFamily: 'Nunito, sans-serif',
+                        },
+                        plotOptions: {
+                            bar: {
+                                horizontal: true,
+                                borderRadius: 6,
+                                dataLabels: { position: 'bottom' },
+                            },
+                        },
+                        colors: ['#4361ee'],
+                        dataLabels: {
+                            enabled: true,
+                            style: { fontSize: '12px', colors: ['#fff'] },
+                        },
+                        xaxis: {
+                            categories: top5TerjualData.labels,
+                            labels: {
+                                style: { colors: '#888ea8', fontSize: '12px' },
+                            },
+                        },
+                        yaxis: {
+                            labels: {
+                                style: { colors: '#888ea8', fontSize: '12px' },
+                            },
+                        },
+                        legend: { show: false },
+                        grid: {
+                            borderColor: '#e0e6ed',
+                            strokeDashArray: 5,
+                        },
+                        tooltip: {
+                            theme: 'dark',
+                        },
+                    };
+
+                    var chart = new ApexCharts(document.getElementById('topSoldChart'), options);
+                    chart.render();
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    renderTopSoldChart();
+                });
+            </script>
+        </div>
+
+    </div>
+
+    {{-- Tabel Barang Di Bawah Minimum --}}
+    <div class="mt-6 grid grid-cols-1 gap-6">
         <div class="panel">
             <div class="mb-5 flex items-center justify-between">
                 <h5 class="text-lg font-semibold dark:text-white-light">Barang Di Bawah Stok Minimum</h5>
@@ -193,9 +282,11 @@
                         <thead>
                             <tr>
                                 <th class="ltr:rounded-l-md rtl:rounded-r-md">Nama Barang</th>
+                                <th>Kategori</th>
+                                <th>Satuan</th>
                                 <th>Stok Saat Ini</th>
                                 <th>Batas Minimum</th>
-                                <th class="ltr:rounded-r-md rtl:rounded-l-md">Status</th>
+                                <th class="ltr:rounded-r-md rtl:rounded-l-md">ROP</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,15 +295,13 @@
                                 <td class="font-semibold text-black dark:text-white">
                                     {{ $item->nama_barang }}
                                 </td>
+                                <td>{{ $item->kategori ?? '-' }}</td>
+                                <td>{{ $item->satuan ?? '-' }}</td>
                                 <td>
                                     <span class="font-bold text-danger">{{ $item->persediaan_akhir }}</span>
                                 </td>
                                 <td>{{ $item->stok_minimum }}</td>
-                                <td>
-                                    <span class="badge bg-danger shadow-md dark:group-hover:bg-transparent">
-                                        Kritis
-                                    </span>
-                                </td>
+                                <td>{{ number_format($item->reorder_point) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -223,7 +312,6 @@
                 </div>
             @endif
         </div>
-
     </div>
 </div>
 @endsection

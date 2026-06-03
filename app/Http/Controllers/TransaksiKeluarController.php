@@ -42,12 +42,20 @@ class TransaksiKeluarController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         $request->validate([
             'id_barang' => 'required|exists:barang,id',
             'tanggal'   => 'required|date',
             'jumlah'    => 'required|integer|min:1',
             'keterangan' => 'nullable|string',
         ]);
+
+        $stockService = app(\App\Service\StockControlService::class);
+        $stokAktual = $stockService->getStokAktual($request->id_barang);
+
+        if ($request->jumlah > $stokAktual) {
+            return back()->withErrors(['jumlah' => "Stok tidak mencukupi. Stok saat ini hanya: " . number_format($stokAktual)])->withInput();
+        }
 
         TransaksiKeluar::create($request->all());
 
@@ -71,6 +79,19 @@ class TransaksiKeluarController extends Controller
             'jumlah'    => 'required|integer|min:1',
             'keterangan' => 'nullable|string',
         ]);
+
+        $stockService = app(\App\Service\StockControlService::class);
+        $stokAktual = $stockService->getStokAktual($request->id_barang);
+
+        // Jika barang yang dipilih sama dengan transaksi sebelumnya, kembalikan jumlah lama ke perhitungan stok tersedia
+        $stokTersedia = $stokAktual;
+        if ($transaksiKeluar->id_barang == $request->id_barang) {
+            $stokTersedia += $transaksiKeluar->jumlah;
+        }
+
+        if ($request->jumlah > $stokTersedia) {
+            return back()->withErrors(['jumlah' => "Stok tidak mencukupi. Stok tersedia hanya: " . number_format($stokTersedia)])->withInput();
+        }
 
         $transaksiKeluar->update($request->all());
 
