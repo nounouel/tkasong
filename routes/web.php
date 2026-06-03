@@ -28,5 +28,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('penjualan-agregat', PenjualanAgregatController::class)->only(['index']);
     Route::resource('user', UserController::class);
     Route::get('fuzzy/predict', [FuzzyController::class, 'predict'])->name('fuzzy.predict');
+    Route::get('fuzzy/detail/{id}', [FuzzyController::class, 'detail'])->name('fuzzy.detail');
+    Route::get('fuzzy/barang-detail/{id}', [FuzzyController::class, 'getBarangDetail'])->name('fuzzy.barang-detail');
     Route::resource('fuzzy', FuzzyController::class);
 });

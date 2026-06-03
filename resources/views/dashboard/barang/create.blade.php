@@ -38,11 +38,6 @@
                 <input id="stok_minimum" type="number" name="stok_minimum" class="form-input" placeholder="Contoh: 10" min="0" value="10" required />
             </div>
 
-            <div class="mb-5">
-                <label for="reorder_point" class="dark:text-white-light">Reorder Point (ROP)</label>
-                <input id="reorder_point" type="number" name="reorder_point" class="form-input" placeholder="Contoh: 20" min="0" value="20" required />
-            </div>
-
             <button type="submit" class="btn btn-primary !mt-6">Simpan</button>
         </form>
 

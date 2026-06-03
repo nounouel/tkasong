@@ -17,12 +17,16 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'username' => 'testuser',
-        ]);
+        User::firstOrCreate(
+            ['username' => 'testuser'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password'), // default password for testing
+            ]
+        );
 
         $this->call([
+            BarangSeeder::class,
             TraningSeeder::class,
             TransaksiSeeder::class,
             PenjualanAgregatSeeder::class,

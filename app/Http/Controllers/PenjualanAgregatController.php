@@ -29,7 +29,6 @@ class PenjualanAgregatController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
-
         return view('dashboard.penjualan_agregat.index', compact('penjualanAgregat'));
     }
 }

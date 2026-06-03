@@ -12,10 +12,169 @@ class PenjualanAgregat extends Model
         'id_barang',
         'tanggal',
         'total_terjual',
+        'reorder_point',
+        'stok_terakhir',
+        'rata_rata_penjualan_perhari',
     ];
 
     public function barang()
     {
         return $this->belongsTo(Barang::class, 'id_barang');
+    }
+
+    /**
+     * Hitung stok terakhir barang pada tanggal tersebut berdasarkan
+     * akumulasi transaksi masuk dikurangi akumulasi transaksi keluar.
+     */
+    public function getStokTerakhirAttribute()
+    {
+        if (isset($this->attributes['stok_terakhir'])) {
+            return $this->attributes['stok_terakhir'];
+        }
+
+        $totalMasuk = \Illuminate\Support\Facades\DB::table('transaksi_masuk')
+            ->where('id_barang', $this->id_barang)
+            ->where('tanggal', '<=', $this->tanggal)
+            ->sum('jumlah');
+
+        $totalKeluar = \Illuminate\Support\Facades\DB::table('transaksi_keluar')
+            ->where('id_barang', $this->id_barang)
+            ->where('tanggal', '<=', $this->tanggal)
+            ->sum('jumlah');
+
+        return $totalMasuk - $totalKeluar;
+    }
+
+    /**
+     * Hitung rata-rata penjualan harian barang terkait sejak transaksi pertama (terhitung dari tanggal record tersebut).
+     */
+    public function getRataPenjualanHarianAttribute()
+    {
+        if (isset($this->attributes['rata_rata_penjualan_perhari']) && floatval($this->attributes['rata_rata_penjualan_perhari']) > 0) {
+            return floatval($this->attributes['rata_rata_penjualan_perhari']);
+        }
+
+        $oldestDate = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+            ->where('id_barang', $this->id_barang)
+            ->min('tanggal');
+
+        $minTanggal = $oldestDate ?: $this->tanggal;
+        if ($this->tanggal < $minTanggal) {
+            $minTanggal = $this->tanggal;
+        }
+        $daysSpan = \Carbon\Carbon::parse($minTanggal)->diffInDays(\Carbon\Carbon::parse($this->tanggal)) + 1;
+
+        $totalSoldAccumulated = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+            ->where('id_barang', $this->id_barang)
+            ->where('tanggal', '<=', $this->tanggal)
+            ->sum('total_terjual');
+
+        return round($daysSpan > 0 ? ($totalSoldAccumulated / $daysSpan) : 0, 2);
+    }
+
+    /**
+     * Sinkronisasikan semua record penjualan_agregat untuk id_barang sejak tanggal tertentu.
+     */
+    public static function syncAgregatForBarang(int $idBarang, string $tanggal)
+    {
+        // 1. Sync the specific date first to create/update/delete the record
+        self::syncAgregat($idBarang, $tanggal);
+
+        // 2. Sync all subsequent aggregates
+        $dates = self::where('id_barang', $idBarang)
+            ->where('tanggal', '>', $tanggal)
+            ->orderBy('tanggal', 'asc')
+            ->pluck('tanggal');
+
+        foreach ($dates as $date) {
+            self::syncAgregat($idBarang, $date);
+        }
+    }
+
+    /**
+     * Sinkronisasikan record penjualan_agregat untuk id_barang dan tanggal tertentu.
+     */
+    public static function syncAgregat(int $idBarang, string $tanggal)
+    {
+        // Hitung total terjual dari transaksi keluar
+        $totalTerjual = \Illuminate\Support\Facades\DB::table('transaksi_keluar')
+            ->where('id_barang', $idBarang)
+            ->where('tanggal', $tanggal)
+            ->sum('jumlah');
+
+        $barang = \Illuminate\Support\Facades\DB::table('barang')->where('id', $idBarang)->first();
+        if (!$barang) {
+            \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', $tanggal)
+                ->delete();
+            return;
+        }
+
+        $ss = $barang->stok_minimum;
+        $d = (int) $totalTerjual;
+        $L = 2; // Lead Time 2 hari
+        $rop = ($d * $L) + $ss;
+
+        if ($d > 0) {
+            // Update or insert basic record
+            \Illuminate\Support\Facades\DB::table('penjualan_agregat')->updateOrInsert(
+                [
+                    'id_barang' => $idBarang,
+                    'tanggal'   => $tanggal,
+                ],
+                [
+                    'total_terjual' => $d,
+                    'reorder_point' => $rop,
+                    'updated_at'    => now(),
+                ]
+            );
+
+            // Calculate stok_terakhir
+            $totalMasuk = \Illuminate\Support\Facades\DB::table('transaksi_masuk')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', '<=', $tanggal)
+                ->sum('jumlah');
+
+            $totalKeluar = \Illuminate\Support\Facades\DB::table('transaksi_keluar')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', '<=', $tanggal)
+                ->sum('jumlah');
+
+            $stokTerakhir = $totalMasuk - $totalKeluar;
+
+            // Calculate rata_rata_penjualan_perhari (total sold divided by days span from first sale to current date)
+            $oldestDate = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+                ->where('id_barang', $idBarang)
+                ->min('tanggal');
+
+            $minTanggal = $oldestDate ?: $tanggal;
+            if ($tanggal < $minTanggal) {
+                $minTanggal = $tanggal;
+            }
+            $daysSpan = \Carbon\Carbon::parse($minTanggal)->diffInDays(\Carbon\Carbon::parse($tanggal)) + 1;
+
+            $totalSoldAccumulated = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', '<=', $tanggal)
+                ->sum('total_terjual');
+
+            $rata = $totalSoldAccumulated / $daysSpan;
+
+            // Update calculated columns
+            \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', $tanggal)
+                ->update([
+                    'stok_terakhir' => $stokTerakhir,
+                    'rata_rata_penjualan_perhari' => round($rata ?: 0, 2),
+                ]);
+        } else {
+            // Hapus record jika tidak ada penjualan lagi pada tanggal tersebut
+            \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+                ->where('id_barang', $idBarang)
+                ->where('tanggal', $tanggal)
+                ->delete();
+        }
     }
 }

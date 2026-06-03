@@ -27,14 +27,12 @@ class DashboardTest extends TestCase
             'nama_barang' => 'Beras Pandan wangi',
             'satuan' => 'kg',
             'stok_minimum' => 50,
-            'reorder_point' => 100
         ]);
 
         $barang2 = Barang::create([
             'nama_barang' => 'Gula Semut',
             'satuan' => 'kg',
             'stok_minimum' => 10,
-            'reorder_point' => 20
         ]);
 
         // Add incoming stock

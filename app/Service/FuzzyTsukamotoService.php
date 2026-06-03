@@ -4,100 +4,72 @@ namespace App\Service;
 
 class FuzzyTsukamotoService
 {
-    // ======================= FUZZIFIKASI PENJUALAN =======================
-    // Domain penjualan (misal 0-200), bisa disesuaikan
-    private function membershipPenjualanSedikit($x)
-    {
-        if ($x <= 0) return 1;
-        if ($x >= 70) return 0;
-        return (70 - $x) / 70;
-    }
-
-    private function membershipPenjualanSedang($x)
-    {
-        if ($x <= 70 || $x >= 130) return 0;
-        if ($x <= 100) return ($x - 70) / 30;
-        return (130 - $x) / 30;
-    }
-
-    private function membershipPenjualanBanyak($x)
-    {
-        if ($x <= 130) return 0;
-        if ($x >= 200) return 1;
-        return ($x - 130) / 70;
-    }
-
-    // ======================= FUZZIFIKASI STOK =======================
-    // Domain stok (misal 0-300)
-    private function membershipStokSedikit($x)
-    {
-        if ($x <= 0) return 1;
-        if ($x >= 100) return 0;
-        return (100 - $x) / 100;
-    }
-
-    private function membershipStokSedang($x)
-    {
-        if ($x <= 100 || $x >= 200) return 0;
-        if ($x <= 150) return ($x - 100) / 50;
-        return (200 - $x) / 50;
-    }
-
-    private function membershipStokBanyak($x)
-    {
-        if ($x <= 200) return 0;
-        if ($x >= 300) return 1;
-        return ($x - 200) / 100;
-    }
-
-    // ======================= OUTPUT Z UNTUK MASING-MASING HIMPUNAN =======================
-    // Output domain pembelian (0-200)
-    private function zSedikit($alpha)
-    {
-        // Sedikit: 0 -> 50
-        return 50 * (1 - $alpha);
-    }
-
-    private function zSedangSedikit($alpha)
-    {
-        // Sedang-Sedikit: 50 -> 90
-        return 50 + 40 * $alpha;
-    }
-
-    private function zSedangBanyak($alpha)
-    {
-        // Sedang-Banyak: 90 -> 150
-        return 90 + 60 * $alpha;
-    }
-
-    private function zBanyak($alpha)
-    {
-        // Banyak: 150 -> 200
-        return 150 + 50 * $alpha;
-    }
-
     /**
      * Hitung rekomendasi pembelian dengan Fuzzy Tsukamoto
      * @param float $penjualan Rata-rata penjualan harian (atau periode tertentu)
      * @param float $stok Stok aktual saat ini
+     * @param int|null $idBarang ID barang untuk mencari batasan dinamis
      * @return int Jumlah pembelian yang direkomendasikan (dibulatkan)
      */
-    public function hitungRekomendasi($penjualan, $stok)
+    public function hitungRekomendasi($penjualan, $stok, $idBarang = null)
     {
-        // 1. Fuzzyfikasi input
+        if ($idBarang) {
+            $domains = $this->getDynamicDomains($idBarang);
+        } else {
+            // Default backward compatible domains jika idBarang tidak disuplai
+            $domains = [
+                'penjualan' => ['min' => 0, 'max' => 200],
+                'stok'      => ['min' => 0, 'max' => 300],
+                'pembelian' => ['min' => 0, 'max' => 200]
+            ];
+        }
+
+        $result = $this->hitungRekomendasiDinamis($penjualan, $stok, $domains);
+        return $result['nilai'];
+    }
+
+    /**
+     * Hitung rekomendasi pembelian dengan Fuzzy Tsukamoto menggunakan domain dinamis
+     * @param float $penjualan Penjualan harian
+     * @param float $stok Stok saat ini
+     * @param array $domains Batasan min/max dinamis untuk variabel
+     * @return array ['nilai' => float, 'kategori' => string]
+     */
+    public function hitungRekomendasiDinamis($penjualan, $stok, $domains)
+    {
+        // Ambil batasan dinamis
+        $minPenjualan = $domains['penjualan']['min'];
+        $maxPenjualan = $domains['penjualan']['max'];
+
+        $minStok = $domains['stok']['min'];
+        $maxStok = $domains['stok']['max'];
+
+        $minPembelian = $domains['pembelian']['min'];
+        $maxPembelian = $domains['pembelian']['max'];
+
+        // Fuzzifikasi input Penjualan
+        $midPenjualan = ($minPenjualan + $maxPenjualan) / 2;
+        $q1Penjualan = $minPenjualan + ($midPenjualan - $minPenjualan) / 2;
+        $q3Penjualan = $midPenjualan + ($maxPenjualan - $midPenjualan) / 2;
+
         $muPenjualan = [
-            'sedikit' => $this->membershipPenjualanSedikit($penjualan),
-            'sedang'  => $this->membershipPenjualanSedang($penjualan),
-            'banyak'  => $this->membershipPenjualanBanyak($penjualan),
+            'sedikit' => $this->segitiga($penjualan, $minPenjualan, $minPenjualan, $midPenjualan),
+            'sedang'  => $this->segitiga($penjualan, $q1Penjualan, $midPenjualan, $q3Penjualan),
+            'banyak'  => $this->segitiga($penjualan, $midPenjualan, $maxPenjualan, $maxPenjualan),
         ];
+
+        // Fuzzifikasi input Stok
+        $midStok = ($minStok + $maxStok) / 2;
+        $q1Stok = $minStok + ($midStok - $minStok) / 2;
+        $q3Stok = $midStok + ($maxStok - $midStok) / 2;
 
         $muStok = [
-            'sedikit' => $this->membershipStokSedikit($stok),
-            'sedang'  => $this->membershipStokSedang($stok),
-            'banyak'  => $this->membershipStokBanyak($stok),
+            'sedikit' => $this->segitiga($stok, $minStok, $minStok, $midStok),
+            'sedang'  => $this->segitiga($stok, $q1Stok, $midStok, $q3Stok),
+            'banyak'  => $this->segitiga($stok, $midStok, $maxStok, $maxStok),
         ];
 
-        // 2. Aturan (R1..R9)
+        // 9 Rules
         $rules = [
             ['p' => 'sedikit', 's' => 'sedikit',  'out' => 'sedang_banyak'],
             ['p' => 'sedikit', 's' => 'sedang',   'out' => 'sedang_sedikit'],
@@ -110,46 +82,110 @@ class FuzzyTsukamotoService
             ['p' => 'banyak',  's' => 'banyak',   'out' => 'sedang_banyak'],
         ];
 
-        $alpha = [];
-        $z = [];
+        $pembilang = 0;
+        $penyebut = 0;
 
         foreach ($rules as $i => $rule) {
-            $alpha[$i] = min($muPenjualan[$rule['p']], $muStok[$rule['s']]);
-            if ($alpha[$i] == 0) {
-                $z[$i] = 0;
+            $alpha = min($muPenjualan[$rule['p']], $muStok[$rule['s']]);
+            if ($alpha <= 0) {
                 continue;
             }
 
+            $z = 0;
             switch ($rule['out']) {
                 case 'sedikit':
-                    $z[$i] = $this->zSedikit($alpha[$i]);
+                    $z = ($maxPembelian * 0.25) * (1 - $alpha);
                     break;
                 case 'sedang_sedikit':
-                    $z[$i] = $this->zSedangSedikit($alpha[$i]);
+                    $z = ($maxPembelian * 0.25) + ($maxPembelian * 0.20) * $alpha;
                     break;
                 case 'sedang_banyak':
-                    $z[$i] = $this->zSedangBanyak($alpha[$i]);
+                    $z = ($maxPembelian * 0.45) + ($maxPembelian * 0.30) * $alpha;
                     break;
                 case 'banyak':
-                    $z[$i] = $this->zBanyak($alpha[$i]);
+                    $z = ($maxPembelian * 0.75) + ($maxPembelian * 0.25) * $alpha;
                     break;
-                default:
-                    $z[$i] = 0;
             }
-        }
 
-        // 3. Defuzzifikasi (Weighted Average)
-        $pembilang = 0;
-        $penyebut = 0;
-        for ($i = 0; $i < count($rules); $i++) {
-            $pembilang += $alpha[$i] * $z[$i];
-            $penyebut += $alpha[$i];
+            $pembilang += $alpha * $z;
+            $penyebut += $alpha;
         }
 
         if ($penyebut == 0) {
-            return 0;
+            $hasilCrisp = ($minPembelian + $maxPembelian) / 2; // default
+        } else {
+            $hasilCrisp = $pembilang / $penyebut;
         }
 
-        return (int) round($pembilang / $penyebut);
+        // Kategori Output
+        if ($hasilCrisp <= ($maxPembelian * 0.30)) {
+            $kategori = 'Sedikit';
+        } elseif ($hasilCrisp <= ($maxPembelian * 0.50)) {
+            $kategori = 'Sedang-Sedikit';
+        } elseif ($hasilCrisp <= ($maxPembelian * 0.75)) {
+            $kategori = 'Sedang-Banyak';
+        } else {
+            $kategori = 'Banyak';
+        }
+
+        return [
+            'nilai' => (int) round($hasilCrisp),
+            'kategori' => $kategori
+        ];
+    }
+
+    /**
+     * Mengambil batasan dinamis untuk barang dari data transaksi & penjualan_agregat
+     */
+    private function getDynamicDomains($idBarang)
+    {
+        // 1. Max Penjualan (dari penjualan_agregat)
+        $maxPenjualan = \Illuminate\Support\Facades\DB::table('penjualan_agregat')
+            ->where('id_barang', $idBarang)
+            ->max('total_terjual') ?: 50;
+
+        // 2. Max Stok (dari transaksi masuk - transaksi keluar)
+        $totalMasuk = \Illuminate\Support\Facades\DB::table('transaksi_masuk')
+            ->where('id_barang', $idBarang)
+            ->sum('jumlah');
+
+        $totalKeluar = \Illuminate\Support\Facades\DB::table('transaksi_keluar')
+            ->where('id_barang', $idBarang)
+            ->sum('jumlah');
+
+        $maxStok = $totalMasuk - $totalKeluar;
+        if ($maxStok <= 0) {
+            $maxStok = 100;
+        }
+
+        // 3. Max Pembelian (dari transaksi_masuk)
+        $maxPembelian = \Illuminate\Support\Facades\DB::table('transaksi_masuk')
+            ->where('id_barang', $idBarang)
+            ->max('jumlah') ?: 100;
+
+        return [
+            'penjualan' => ['min' => 0, 'max' => $maxPenjualan],
+            'stok'      => ['min' => 0, 'max' => $maxStok],
+            'pembelian' => ['min' => 0, 'max' => $maxPembelian]
+        ];
+    }
+
+    /**
+     * Fungsi keanggotaan segitiga
+     */
+    private function segitiga($x, $a, $b, $c)
+    {
+        if ($x <= $a || $x >= $c) {
+            return 0;
+        }
+        if ($x == $b) {
+            return 1;
+        }
+        if ($x < $b) {
+            if ($b == $a) return 0;
+            return ($x - $a) / ($b - $a);
+        }
+        if ($c == $b) return 0;
+        return ($c - $x) / ($c - $b);
     }
 }

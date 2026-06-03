@@ -4,7 +4,7 @@ namespace App\Service;
 
 use App\Models\Barang;
 use App\Models\PenjualanAgregat;
-use App\Models\Rekomendasi;
+use App\Models\Fuzzy;
 use App\Models\TransaksiKeluar;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -41,18 +41,40 @@ class StockControlService
     /**
      * Hitung rata-rata penjualan harian dari tabel agregat
      * @param int $barangId
-     * @param int $hari (default 30)
+     * @param int|null $hari
      * @return float
      */
-    public function hitungRataPenjualanHarian($barangId, $hari = 30)
+    public function hitungRataPenjualanHarian($barangId, $hari = null)
     {
-        $startDate = Carbon::now()->subDays($hari)->startOfDay();
+        // Get the latest penjualan_agregat record's rata_rata_penjualan_perhari, or calculate it.
+        $latest = PenjualanAgregat::where('id_barang', $barangId)
+            ->orderBy('tanggal', 'desc')
+            ->first();
 
-        $rata = PenjualanAgregat::where('id_barang', $barangId)
-            ->where('tanggal', '>=', $startDate)
-            ->avg('total_terjual');
+        if ($latest && $latest->rata_rata_penjualan_perhari !== null) {
+            return floatval($latest->rata_rata_penjualan_perhari);
+        }
 
-        return round($rata, 2);
+        // Fallback calculation if not in database
+        $oldestDate = DB::table('penjualan_agregat')
+            ->where('id_barang', $barangId)
+            ->min('tanggal');
+
+        if (!$oldestDate) {
+            return 0.0;
+        }
+
+        $latestDate = DB::table('penjualan_agregat')
+            ->where('id_barang', $barangId)
+            ->max('tanggal');
+
+        $daysSpan = Carbon::parse($oldestDate)->diffInDays(Carbon::parse($latestDate)) + 1;
+
+        $totalSoldAccumulated = DB::table('penjualan_agregat')
+            ->where('id_barang', $barangId)
+            ->sum('total_terjual');
+
+        return round($daysSpan > 0 ? ($totalSoldAccumulated / $daysSpan) : 0, 2);
     }
 
     /**
@@ -70,15 +92,7 @@ class StockControlService
             ->get();
 
         foreach ($penjualanPerBarang as $item) {
-            PenjualanAgregat::updateOrCreate(
-                [
-                    'id_barang' => $item->id_barang,
-                    'tanggal'   => $tanggal,
-                ],
-                [
-                    'total_terjual' => $item->total,
-                ]
-            );
+            PenjualanAgregat::syncAgregat($item->id_barang, $tanggal);
         }
     }
 
@@ -91,8 +105,16 @@ class StockControlService
     {
         $stokAktual = $this->getStokAktual($barang->id);
 
+        // Fetch reorder_point from latest penjualan_agregat
+        $latestAgregat = PenjualanAgregat::where('id_barang', $barang->id)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+        $reorderPoint = $latestAgregat ? $latestAgregat->reorder_point : 10;
+
         // 1. Bandingkan dengan ROP
-        if ($stokAktual > $barang->reorder_point) {
+        if ($stokAktual > $reorderPoint) {
+            // Hapus rekomendasi pending/stale yang sudah aman stoknya
+            Fuzzy::where('id_barang', $barang->id)->delete();
             return null; // stok aman, tidak perlu rekomendasi
         }
 
@@ -100,23 +122,41 @@ class StockControlService
         $rataPenjualan = $this->hitungRataPenjualanHarian($barang->id, 30);
 
         // 3. Fuzzy Tsukamoto
-        $rekomendasiJumlah = $this->fuzzyService->hitungRekomendasi($rataPenjualan, $stokAktual);
+        $rekomendasiJumlah = $this->fuzzyService->hitungRekomendasi($rataPenjualan, $stokAktual, $barang->id);
 
-        // 4. Simpan rekomendasi ke database
-        $rekom = Rekomendasi::create([
-            'id_barang'     => $barang->id,
-            'stok_saat_ini' => $stokAktual,
-            'rata_penjualan'=> $rataPenjualan,
-            'jumlah_direkomendasikan' => $rekomendasiJumlah,
-            'status'        => 'pending',
-            'dihasilkan_pada' => now(),
-        ]);
+        // 4. Simpan / update rekomendasi ke database (fuzzies)
+        $maxPembelian = DB::table('transaksi_masuk')
+            ->where('id_barang', $barang->id)
+            ->max('jumlah') ?: 100;
+
+        if ($rekomendasiJumlah <= ($maxPembelian * 0.30)) {
+            $kategori = 'Sedikit';
+        } elseif ($rekomendasiJumlah <= ($maxPembelian * 0.50)) {
+            $kategori = 'Sedang-Sedikit';
+        } elseif ($rekomendasiJumlah <= ($maxPembelian * 0.75)) {
+            $kategori = 'Sedang-Banyak';
+        } else {
+            $kategori = 'Banyak';
+        }
+
+        $rekom = Fuzzy::updateOrCreate(
+            [
+                'id_barang' => $barang->id,
+                'tanggal'   => now()->toDateString(),
+            ],
+            [
+                'stok'        => $stokAktual,
+                'permintaan'  => $rataPenjualan,
+                'nilai_crisp' => (int) round($rekomendasiJumlah),
+                'hasil_fuzzy' => $kategori,
+            ]
+        );
 
         return [
             'id_rekomendasi' => $rekom->id,
             'barang'         => $barang->nama_barang,
             'stok_saat_ini'  => $stokAktual,
-            'reorder_point'  => $barang->reorder_point,
+            'reorder_point'  => $reorderPoint,
             'rata_penjualan' => $rataPenjualan,
             'rekomendasi'    => $rekomendasiJumlah,
         ];
@@ -138,5 +178,17 @@ class StockControlService
             }
         }
         return $hasil;
+    }
+
+    /**
+     * Cek kondisi stok dan hitung rekomendasi menggunakan ID barang
+     */
+    public function cekDanRekomendasiById($barangId)
+    {
+        $barang = Barang::find($barangId);
+        if ($barang) {
+            return $this->cekDanRekomendasi($barang);
+        }
+        return null;
     }
 }

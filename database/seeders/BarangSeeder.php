@@ -140,13 +140,101 @@ class BarangSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
+            $stokMinimum = $this->calculateStokMinimum($item['kategori'], $item['nama_barang'], $item['satuan']);
             Barang::create([
                 'kategori'       => $item['kategori'],
                 'nama_barang'    => $item['nama_barang'],
                 'satuan'         => $item['satuan'],// default, bisa diisi manual nanti
-                'stok_minimum'   => 5, // nilai default safety stock
-                'reorder_point'  => 10, // nilai default ROP
+                'stok_minimum'   => $stokMinimum,
             ]);
         }
+    }
+
+    /**
+     * Menghitung stok minimum (safety stock) secara dinamis
+     * agar data lebih bervariasi dan menyerupai data riil di toko.
+     */
+    private function calculateStokMinimum(string $kategori, string $namaBarang, string $satuan): int
+    {
+        $kategori = strtoupper($kategori);
+        $satuanClean = strtolower(str_replace(' ', '', $satuan));
+        $baseStokMinimum = 10; // default base safety stock
+
+        // 1. Barang-barang berat / kemasan besar (stok minimum lebih kecil karena perputaran lambat)
+        if (str_contains($satuanClean, '25kg') || str_contains($satuanClean, '40kg') || str_contains($satuanClean, '20kg') || (str_contains($satuanClean, '5kg') && $kategori === 'TEPUNG')) {
+            $baseStokMinimum = 3;
+        }
+        // 2. Beras
+        elseif ($kategori === 'BERAS') {
+            if (str_contains($satuanClean, '25kg') || str_contains($satuanClean, '40kg') || str_contains($satuanClean, '20kg')) {
+                $baseStokMinimum = 5;
+            } else {
+                $baseStokMinimum = 10; // untuk kemasan 5kg / 10kg / 12kg
+            }
+        }
+        // 3. Sembako utama / Fast Moving
+        elseif ($kategori === 'MINYAK') {
+            $baseStokMinimum = (str_contains($satuanClean, '1lt') || str_contains($satuanClean, '1kg')) ? 18 : 10;
+        }
+        elseif ($kategori === 'MIE INDOFOOD' || $kategori === 'MIE SEDAAP') {
+            $baseStokMinimum = 30; // Mi instan terpopuler, perputaran sangat cepat
+        }
+        elseif ($kategori === 'MIE SUPERMI' || $kategori === 'MIE SARIMI' || $kategori === 'MIE INTERMI') {
+            $baseStokMinimum = 15; // Secondary brand mi instan
+        }
+        elseif ($kategori === 'MIE KUNING') {
+            $baseStokMinimum = 12;
+        }
+        // 4. Susu Kaleng & Mentega
+        elseif ($kategori === 'SUSU KALENG') {
+            $baseStokMinimum = str_contains($satuanClean, '1kg') ? 8 : 22;
+        }
+        elseif ($kategori === 'MENTEGA') {
+            $baseStokMinimum = 15;
+        }
+        // 5. Bumbu dapur eceran / Sachets (murah, cepat habis, stok minimum harus tinggi)
+        elseif (in_array($kategori, ['MASAKO', 'ROYCO', 'MICIN', 'PEWANGI'])) {
+            if (str_contains($satuanClean, 'gr') || str_contains($satuanClean, 'ml')) {
+                preg_match('/(\d+[\d,]*)/', $satuanClean, $matches);
+                if (isset($matches[1])) {
+                    $weight = (float) str_replace(',', '.', $matches[1]);
+                    if ($weight <= 20) {
+                        $baseStokMinimum = 40; // sachet kecil
+                    } elseif ($weight <= 100) {
+                        $baseStokMinimum = 25; // kemasan sedang
+                    }
+                }
+            } else {
+                $baseStokMinimum = 20;
+            }
+        }
+        // 6. Garam, Teh, Sabun Cuci, Detergent
+        elseif ($kategori === 'DETERGENT' || $kategori === 'SABUN CUCI') {
+            $baseStokMinimum = 16;
+        }
+        elseif ($kategori === 'GARAM') {
+            $baseStokMinimum = 12;
+        }
+        elseif ($kategori === 'TEH') {
+            $baseStokMinimum = 20;
+        }
+        // 7. Saus, Kecap, Sirup, Ikan Kaleng
+        elseif (in_array($kategori, ['SAUS SAMBAL', 'SAUS TOMAT', 'SAMBAL', 'KECAP', 'KECAP ASIN', 'SAOS'])) {
+            $baseStokMinimum = 12;
+        }
+        elseif ($kategori === 'SIRUP') {
+            $baseStokMinimum = 8;
+        }
+        elseif ($kategori === 'IKAN KALENG') {
+            $baseStokMinimum = 12;
+        }
+        elseif ($kategori === 'KERUPUK') {
+            $baseStokMinimum = 6;
+        }
+
+        // Tambahkan variasi natural berdasarkan panjang nama barang (deterministic offset: -2 s.d +2)
+        $variation = (strlen($namaBarang) % 5) - 2;
+        
+        return (int) max(2, $baseStokMinimum + $variation);
     }
 }

@@ -35,9 +35,25 @@ class TraningSeeder extends Seeder
             $bar = $this->command->getOutput()->createProgressBar($totalQueries);
             $bar->start();
             
+            DB::table('traning')->truncate();
+
             foreach ($queries as $query) {
+                $trimmed = trim($query);
+                if (empty($trimmed)) {
+                    $bar->advance();
+                    continue;
+                }
+                $upper = strtoupper($trimmed);
+                if (str_starts_with($upper, 'CREATE TABLE') || 
+                    str_starts_with($upper, 'TRUNCATE TABLE') || 
+                    str_starts_with($upper, 'SET FOREIGN_KEY_CHECKS') ||
+                    str_starts_with($upper, 'INSERT INTO BARANG') || // Skip inserting into barang since it is already seeded
+                    str_starts_with($upper, 'INSERT INTO `BARANG`')) {
+                    $bar->advance();
+                    continue;
+                }
                 // Semicolon was removed during explode, so add it back
-                DB::unprepared($query . ';');
+                DB::unprepared($trimmed . ';');
                 $bar->advance();
             }
             

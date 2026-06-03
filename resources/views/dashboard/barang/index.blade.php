@@ -50,10 +50,6 @@
                             Stok Minimum
                         </th>
 
-                        <th>
-                            Reorder Point (ROP)
-                        </th>
-
                         <th class="text-center ltr:rounded-r-md rtl:rounded-l-md">
                             Aksi
                         </th>
@@ -83,10 +79,6 @@
 
                         <td>
                             {{ $item->stok_minimum }}
-                        </td>
-
-                        <td>
-                            {{ $item->reorder_point }}
                         </td>
 
                         <td class="text-center">

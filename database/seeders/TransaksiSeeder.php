@@ -30,21 +30,20 @@ class TransaksiSeeder extends Seeder
 
         $this->command->info("Mengekstrak data transaksi...");
 
-        $masukData = [];
-        $keluarData = [];
+        $masukByDate = [];
+        $keluarByDate = [];
         $startDate = Carbon::create(2025, 4, 1);
         $totalParsedRows = 0;
-        $nowStr = Carbon::now()->toDateTimeString();
+        $trackedInitialStock = [];
 
         // Match pattern: (id_barang, tahun, bulan, persediaan_awal, pembelian, penjualan, persediaan_akhir, created_at, updated_at)
         // E.g.: (1, 2025, 4, 29, 0, 1, 28, '2026-05-22 16:11:07', '2026-05-22 16:11:07'),
         $pattern = '/\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,/';
 
         while (($line = fgets($handle)) !== false) {
-            // We match the line against our pattern
-            // A line could have multiple matches if formatted differently, but in our SQL file, each record is on its own line
             if (preg_match($pattern, $line, $match)) {
                 $idBarang = (int) $match[1];
+                $persediaanAwal = (int) $match[4];
                 $pembelian = (int) $match[5];
                 $penjualan = (int) $match[6];
 
@@ -53,25 +52,35 @@ class TransaksiSeeder extends Seeder
                 $dayIndex = (int) ($totalParsedRows / 126);
                 $dateStr = $startDate->copy()->addDays($dayIndex)->toDateString();
 
+                // Catat persediaan_awal pertama kali sebagai transaksi masuk "Stok Awal"
+                if (!isset($trackedInitialStock[$idBarang])) {
+                    $trackedInitialStock[$idBarang] = true;
+                    if ($persediaanAwal > 0) {
+                        $stokAwalDate = $startDate->copy()->subDay()->toDateString(); // 2025-03-31
+                        $masukByDate[$stokAwalDate][] = [
+                            'id_barang' => $idBarang,
+                            'tanggal' => $stokAwalDate,
+                            'jumlah' => $persediaanAwal,
+                            'keterangan' => 'Stok Awal',
+                        ];
+                    }
+                }
+
                 if ($pembelian > 0) {
-                    $masukData[] = [
+                    $masukByDate[$dateStr][] = [
                         'id_barang' => $idBarang,
                         'tanggal' => $dateStr,
                         'jumlah' => $pembelian,
                         'keterangan' => null,
-                        'created_at' => $nowStr,
-                        'updated_at' => $nowStr,
                     ];
                 }
 
                 if ($penjualan > 0) {
-                    $keluarData[] = [
+                    $keluarByDate[$dateStr][] = [
                         'id_barang' => $idBarang,
                         'tanggal' => $dateStr,
                         'jumlah' => $penjualan,
                         'keterangan' => null,
-                        'created_at' => $nowStr,
-                        'updated_at' => $nowStr,
                     ];
                 }
 
@@ -81,6 +90,53 @@ class TransaksiSeeder extends Seeder
         fclose($handle);
 
         $this->command->info("Total data baris traning ditemukan & diproses: {$totalParsedRows}");
+        $this->command->info("Menyusun dan mengacak urutan transaksi agar lebih realisitis...");
+
+        $masukData = [];
+        $keluarData = [];
+
+        // Urutkan key tanggal secara kronologis
+        ksort($masukByDate);
+        foreach ($masukByDate as $dateStr => $items) {
+            // Acak urutan barang untuk tanggal ini
+            shuffle($items);
+            
+            // Buat sebaran waktu (menit) acak yang terurut dari jam 08:00 sampai 20:00 (12 jam = 720 menit)
+            $count = count($items);
+            $timestamps = [];
+            for ($i = 0; $i < $count; $i++) {
+                $timestamps[] = rand(0, 720);
+            }
+            sort($timestamps);
+
+            foreach ($items as $index => $item) {
+                $timeStr = Carbon::parse($dateStr)->startOfDay()->addHours(8)->addMinutes($timestamps[$index])->addSeconds(rand(0, 59))->toDateTimeString();
+                $item['created_at'] = $timeStr;
+                $item['updated_at'] = $timeStr;
+                $masukData[] = $item;
+            }
+        }
+
+        ksort($keluarByDate);
+        foreach ($keluarByDate as $dateStr => $items) {
+            // Acak urutan barang untuk tanggal ini
+            shuffle($items);
+
+            // Buat sebaran waktu (menit) acak terurut
+            $count = count($items);
+            $timestamps = [];
+            for ($i = 0; $i < $count; $i++) {
+                $timestamps[] = rand(0, 720);
+            }
+            sort($timestamps);
+
+            foreach ($items as $index => $item) {
+                $timeStr = Carbon::parse($dateStr)->startOfDay()->addHours(8)->addMinutes($timestamps[$index])->addSeconds(rand(0, 59))->toDateTimeString();
+                $item['created_at'] = $timeStr;
+                $item['updated_at'] = $timeStr;
+                $keluarData[] = $item;
+            }
+        }
 
         $this->command->info("Memasukkan data ke tabel transaksi_masuk (" . count($masukData) . " baris)...");
         // Clear table first to avoid duplicate seeds

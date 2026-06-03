@@ -44,14 +44,20 @@
                             Nama Barang
                         </th>
                         <th>
-                            Kategori 
+                            Kategori
                         </th>
 
                         <th>
                             Tanggal
                         </th>
+                        <th>
+                            Reorder Point (ROP)
+                        </th>
+                        <th>
+                            Stok Terakhir
+                        </th>
                         <th class="ltr:rounded-r-md rtl:rounded-l-md">
-                            Total Terjual
+                            Rata-rata Penjualan Perhari
                         </th>
                     </tr>
                 </thead>
@@ -80,8 +86,16 @@
                             {{ \Carbon\Carbon::parse($item->tanggal)->format('d F Y') }}
                         </td>
 
+                        <td class="font-semibold text-warning">
+                            {{ number_format($item->reorder_point) }}
+                        </td>
+
+                        <td class="font-semibold {{ $item->stok_terakhir <= $item->reorder_point ? 'text-danger font-bold' : 'text-success' }}">
+                            {{ number_format($item->stok_terakhir) }}
+                        </td>
+
                         <td class="text-primary font-bold">
-                            {{ number_format($item->total_terjual) }}
+                            {{ number_format($item->rata_rata_penjualan_perhari, 2) }}
                         </td>
 
                     </tr>
@@ -89,7 +103,7 @@
                     @empty
 
                     <tr>
-                        <td colspan="4" class="text-center">
+                        <td colspan="7" class="text-center">
                             Tidak ada data penjualan agregat
                         </td>
                     </tr>

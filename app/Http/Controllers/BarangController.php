@@ -27,14 +27,12 @@ class BarangController extends Controller
             'nama_barang'   => 'required|string|max:100',
             'satuan'        => 'required|string|max:20',
             'stok_minimum'  => 'required|integer|min:0',
-            'reorder_point' => 'required|integer|min:0',
         ]);
 
         Barang::create([
             'nama_barang'   => $request->nama_barang,
             'satuan'        => $request->satuan,
             'stok_minimum'  => $request->stok_minimum,
-            'reorder_point' => $request->reorder_point,
         ]);
 
         return redirect()->route('barang.index');
@@ -54,14 +52,12 @@ class BarangController extends Controller
             'nama_barang'   => 'required|string|max:100',
             'satuan'        => 'required|string|max:20',
             'stok_minimum'  => 'required|integer|min:0',
-            'reorder_point' => 'required|integer|min:0',
         ]);
 
         $barang->update([
             'nama_barang'   => $request->nama_barang,
             'satuan'        => $request->satuan,
             'stok_minimum'  => $request->stok_minimum,
-            'reorder_point' => $request->reorder_point,
         ]);
 
         return redirect()->route('barang.index');
