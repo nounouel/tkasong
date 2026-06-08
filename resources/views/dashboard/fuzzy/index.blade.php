@@ -32,6 +32,11 @@
     minPembelian() { return this.domains ? this.domains.pembelian.min : 0; },
     maxPembelian() { return this.domains ? this.domains.pembelian.max : 0; },
     midPembelian() { return (this.minPembelian() + this.maxPembelian()) / 2; },
+    rangePembelian() { return this.maxPembelian() - this.minPembelian(); },
+    b1Pembelian() { return this.minPembelian() + this.rangePembelian() * 0.25; },
+    b2Pembelian() { return this.minPembelian() + this.rangePembelian() * 0.50; },
+    b3Pembelian() { return this.minPembelian() + this.rangePembelian() * 0.75; },
+    intervalPembelian() { return this.rangePembelian() / 4; },
 
     pembilangExpr() {
         if (!this.steps || !this.steps.rules) return '';
@@ -502,6 +507,43 @@
 
                                 <!-- Variabel Output Pembelian -->
                                 <div class="space-y-3 pt-4">
+                                    <h4 class="text-base font-bold text-gray-900 dark:text-white">Variabel Output Pembelian</h4>
+                                    
+                                    <!-- Detail Pembagian Domain -->
+                                    <div class="panel bg-[#fbfbfb] dark:bg-[#121c2c] border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-3">
+                                        <h5 class="text-xs font-bold text-primary uppercase tracking-wider">Langkah Pembagian Domain (Equal Interval)</h5>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                                            <div class="space-y-1 bg-white dark:bg-[#0e1726] p-3 rounded border dark:border-gray-800">
+                                                <div class="text-gray-500 font-sans font-semibold">1. Rentang & Lebar Domain:</div>
+                                                <div>Range = Max - Min</div>
+                                                <div class="text-gray-900 dark:text-white" x-text="'Range = ' + maxPembelian().toFixed(2) + ' - ' + minPembelian().toFixed(2) + ' = ' + rangePembelian().toFixed(2)"></div>
+                                                <div class="pt-2 text-gray-500 font-sans font-semibold">2. Lebar Bagian (Interval):</div>
+                                                <div>Interval = Range / Jumlah Kategori (4)</div>
+                                                <div class="text-gray-900 dark:text-white" x-text="'Interval = ' + rangePembelian().toFixed(2) + ' / 4 = ' + intervalPembelian().toFixed(2)"></div>
+                                            </div>
+                                            <div class="space-y-2 bg-white dark:bg-[#0e1726] p-3 rounded border dark:border-gray-800">
+                                                <div class="text-gray-500 font-sans font-semibold mb-1">3. Pembagian Rentang Kategori:</div>
+                                                <div class="space-y-1 font-sans text-gray-700 dark:text-gray-300">
+                                                    <div class="flex justify-between">
+                                                        <span class="font-semibold text-gray-900 dark:text-white">Sedikit:</span>
+                                                        <span x-text="minPembelian().toFixed(2) + ' – ' + b1Pembelian().toFixed(2)"></span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="font-semibold text-gray-900 dark:text-white">Sedang-Sedikit:</span>
+                                                        <span x-text="b1Pembelian().toFixed(2) + ' – ' + b2Pembelian().toFixed(2)"></span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="font-semibold text-gray-900 dark:text-white">Sedang-Banyak:</span>
+                                                        <span x-text="b2Pembelian().toFixed(2) + ' – ' + b3Pembelian().toFixed(2)"></span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="font-semibold text-gray-900 dark:text-white">Banyak:</span>
+                                                        <span x-text="b3Pembelian().toFixed(2) + ' – ' + maxPembelian().toFixed(2)"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-sm text-gray-600 dark:text-gray-300">
                                             <thead>
@@ -512,20 +554,20 @@
                                             </thead>
                                             <tbody>
                                                 <tr class="border-b border-gray-100 dark:border-gray-800/50">
-                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">Pembelian Sedikit</td>
-                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z = maxPembelian - α * (maxPembelian - minPembelian) = ' + maxPembelian() + ' - α * ' + (maxPembelian() - minPembelian()).toFixed(1)"></td>
+                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white" x-text="'Pembelian Sedikit (' + minPembelian().toFixed(2) + ' – ' + b1Pembelian().toFixed(2) + ')'"></td>
+                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z1 = b1 - α * (b1 - min) = ' + b1Pembelian().toFixed(2) + ' - α * ' + intervalPembelian().toFixed(2)"></td>
                                                 </tr>
                                                 <tr class="border-b border-gray-100 dark:border-gray-800/50">
-                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">Pembelian Sedang-Sedikit</td>
-                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z = minPembelian + α * (midPembelian - minPembelian) = ' + minPembelian() + ' + α * ' + (midPembelian() - minPembelian()).toFixed(1)"></td>
+                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white" x-text="'Pembelian Sedang-Sedikit (' + b1Pembelian().toFixed(2) + ' – ' + b2Pembelian().toFixed(2) + ')'"></td>
+                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z2 = b1 + α * (b2 - b1) = ' + b1Pembelian().toFixed(2) + ' + α * ' + intervalPembelian().toFixed(2)"></td>
                                                 </tr>
                                                 <tr class="border-b border-gray-100 dark:border-gray-800/50">
-                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">Pembelian Sedang-Banyak</td>
-                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z = midPembelian + α * (maxPembelian - midPembelian) = ' + midPembelian().toFixed(1) + ' + α * ' + (maxPembelian() - midPembelian()).toFixed(1)"></td>
+                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white" x-text="'Pembelian Sedang-Banyak (' + b2Pembelian().toFixed(2) + ' – ' + b3Pembelian().toFixed(2) + ')'"></td>
+                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z3 = b2 + α * (b3 - b2) = ' + b2Pembelian().toFixed(2) + ' + α * ' + intervalPembelian().toFixed(2)"></td>
                                                 </tr>
                                                 <tr class="border-b border-gray-100 dark:border-gray-800/50">
-                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white">Pembelian Banyak</td>
-                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z = midPembelian + α * (maxPembelian - midPembelian) = ' + midPembelian().toFixed(1) + ' + α * ' + (maxPembelian() - midPembelian()).toFixed(1)"></td>
+                                                    <td class="py-3 px-4 font-semibold text-gray-900 dark:text-white" x-text="'Pembelian Banyak (' + b3Pembelian().toFixed(2) + ' – ' + maxPembelian().toFixed(2) + ')'"></td>
+                                                    <td class="py-3 px-4 font-mono text-xs" x-text="'z4 = b3 + α * (max - b3) = ' + b3Pembelian().toFixed(2) + ' + α * ' + intervalPembelian().toFixed(2)"></td>
                                                 </tr>
                                             </tbody>
                                         </table>

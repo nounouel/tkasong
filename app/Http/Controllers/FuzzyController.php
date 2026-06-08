@@ -155,7 +155,7 @@ public function detail(string $id)
         $fuzzy->id_barang
     );
     
-    $domains = $this->getDynamicDomains($fuzzy->id_barang);
+    $domains = $hasil['domains'];
 
     return response()->json([
         'status' => 'success',
@@ -1049,6 +1049,11 @@ Banyak
     return [
         'nilai' => round($hasilCrisp, 2),
         'kategori' => $kategori,
+        'domains' => [
+            'penjualan' => ['min' => $minPenjualan, 'max' => $maxPenjualan],
+            'stok'      => ['min' => $minStok, 'max' => $maxStok],
+            'pembelian' => ['min' => $minPembelian, 'max' => $maxPembelian]
+        ],
         'fuzzifikasi' => [
             'penjualan' => [
                 'sedikit' => round($penjualanSedikit, 4),

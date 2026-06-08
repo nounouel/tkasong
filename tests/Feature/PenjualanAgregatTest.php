@@ -162,4 +162,48 @@ class PenjualanAgregatTest extends TestCase
             'reorder_point' => 36
         ]);
     }
+
+    public function test_unauthenticated_user_cannot_access_daily_sales()
+    {
+        $response = $this->get(route('penjualan-agregat.daily-sales', ['id_barang' => 1]));
+        $response->assertRedirect('/login');
+    }
+
+    public function test_authenticated_user_can_get_daily_sales_json()
+    {
+        $user = User::factory()->create();
+        $barang = Barang::create([
+            'nama_barang' => 'Minyak Goreng',
+            'satuan' => 'liter',
+            'stok_minimum' => 10,
+        ]);
+
+        PenjualanAgregat::create([
+            'id_barang' => $barang->id,
+            'tanggal' => '2026-05-26',
+            'total_terjual' => 150,
+            'reorder_point' => 20
+        ]);
+
+        PenjualanAgregat::create([
+            'id_barang' => $barang->id,
+            'tanggal' => '2026-05-27',
+            'total_terjual' => 200,
+            'reorder_point' => 25
+        ]);
+
+        $response = $this->actingAs($user)->get(route('penjualan-agregat.daily-sales', ['id_barang' => $barang->id]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'status',
+            'barang' => ['id', 'nama_barang'],
+            'sales' => [
+                '*' => ['tanggal', 'total_terjual']
+            ]
+        ]);
+        
+        $response->assertJsonFragment(['tanggal' => '2026-05-27', 'total_terjual' => 200]);
+        $response->assertJsonFragment(['tanggal' => '2026-05-26', 'total_terjual' => 150]);
+    }
 }
