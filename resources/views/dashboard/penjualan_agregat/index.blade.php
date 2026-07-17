@@ -40,41 +40,25 @@
                         <th class="ltr:rounded-l-md rtl:rounded-r-md">
                             No
                         </th>
-                        <th>
-                            Nama Barang
-                        </th>
-                        <th>
-                            Kategori
-                        </th>
-
-                        <th>
-                            Tanggal
-                        </th>
-                        <th>
-                            Reorder Point (ROP)
-                        </th>
-                        <th>
-                            Stok Terakhir
-                        </th>
-                        <th class="ltr:rounded-r-md rtl:rounded-l-md">
-                            Rata-rata Penjualan Perhari
-                        </th>
+                        <th> Nama Barang </th>
+                        <th> Kategori </th>
+                        <th> Tanggal</th>
+                        <th> Reorder Point (ROP) </th>
+                        <th> Stok Terakhir </th>
+                        <th class="ltr:rounded-r-md rtl:rounded-l-md"> Rata-rata Penjualan Perhari</th>
                     </tr>
                 </thead>
 
                 <tbody>
-
                     @forelse ($penjualanAgregat as $item)
-
                     <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
-
                         <td>
                             {{ $penjualanAgregat->firstItem() ? $penjualanAgregat->firstItem() + $loop->index : $loop->iteration }}
                         </td>
-
                         <td class="text-black dark:text-white font-semibold">
                             @if($item->barang)
-                                <button type="button" @click="showSales({{ $item->id_barang }}, {{ json_encode($item->barang->nama_barang) }})" class="hover:underline hover:text-primary text-left font-semibold">
+                                <button type="button" @click="showSales({{ $item->id_barang }}, {{ json_encode($item->barang->nama_barang) }})" 
+                                    class="hover:underline hover:text-primary text-left font-semibold">
                                     {{ $item->barang->nama_barang }}
                                 </button>
                                 @if($item->barang->satuan)
@@ -84,36 +68,22 @@
                                 Barang tidak ditemukan
                             @endif
                         </td>
-                        <td>
-                            {{ $item->barang->kategori ?? 'Kategori tidak ditemukan' }}
-                        </td>
-
-                        <td>
-                            {{ \Carbon\Carbon::parse($item->tanggal)->format('d F Y') }}
-                        </td>
-
-                        <td class="font-semibold text-warning">
-                            {{ number_format($item->reorder_point) }}
-                        </td>
-
+                        <td>  {{ $item->barang->kategori ?? 'Kategori tidak ditemukan' }} </td>
+                        <td>  {{ \Carbon\Carbon::parse($item->tanggal)->format('d F Y') }}</td>
+                        <td class="font-semibold text-warning"> {{ number_format($item->reorder_point) }} </td>
                         <td class="font-semibold {{ $item->stok_terakhir <= $item->reorder_point ? 'text-danger font-bold' : 'text-success' }}">
                             {{ number_format($item->stok_terakhir) }}
                         </td>
-
                         <td class="text-primary font-bold">
                             {{ number_format($item->rata_rata_penjualan_perhari, 2) }}
                         </td>
-
                     </tr>
-
                     @empty
-
                     <tr>
                         <td colspan="7" class="text-center">
                             Tidak ada data penjualan agregat
                         </td>
                     </tr>
-
                     @endforelse
 
                 </tbody>

@@ -144,7 +144,7 @@
                         </td>
                         <td class="text-center">
                             @if($item->status === 'diproses')
-                                <span class="badge bg-success">Diproses</span>
+                                <span class="badge bg-success">Diproses</span>—
                             @elseif($item->status === 'dibatalkan')
                                 <span class="badge bg-danger">Dibatalkan</span>
                             @else

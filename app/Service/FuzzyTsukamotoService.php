@@ -187,5 +187,7 @@ class FuzzyTsukamotoService
         }
         if ($c == $b) return 0;
         return ($c - $x) / ($c - $b);
+        
     }
+
 }
