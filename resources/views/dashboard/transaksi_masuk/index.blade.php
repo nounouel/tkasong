@@ -67,6 +67,9 @@
                         <th>
                             Keterangan
                         </th>
+                        <th>
+                            Expired Date
+                        </th>
                         <th class="text-center ltr:rounded-r-md rtl:rounded-l-md">
                             Aksi
                         </th>
@@ -106,6 +109,10 @@
                             {{ $item->keterangan ?? '-' }}
                         </td>
 
+                        <td>
+                            {{ $item->expired_date ? \Carbon\Carbon::parse($item->expired_date)->format('d F Y') : '-' }}
+                        </td>
+
                         <td class="text-center">
 
                             <div class="flex items-center justify-center gap-2">
@@ -138,7 +145,7 @@
                     @empty
 
                     <tr>
-                        <td colspan="6" class="text-center">
+                        <td colspan="8" class="text-center">
                             Tidak ada data transaksi masuk
                         </td>
                     </tr>

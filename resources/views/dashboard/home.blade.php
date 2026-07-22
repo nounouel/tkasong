@@ -256,7 +256,94 @@
         </div>
 
     </div>
+    {{-- Tabel Barang Expired Date (Transaksi Masuk) --}}
+    <div class="mt-6 grid grid-cols-1 gap-6">
+        <div class="panel">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <h5 class="text-lg font-semibold dark:text-white-light">Barang Expired Date (Transaksi Masuk)</h5>
+                <div class="flex items-center gap-2">
+                    @if($jumlahKadaluarsa > 0)
+                        <span class="badge bg-danger animate-pulse">{{ $jumlahKadaluarsa }} Kadaluarsa</span>
+                    @endif
+                    @if($jumlahHampirKadaluarsa > 0)
+                        <span class="badge bg-warning">{{ $jumlahHampirKadaluarsa }} Hampir Kadaluarsa</span>
+                    @endif
+                    @if($jumlahKadaluarsa == 0 && $jumlahHampirKadaluarsa == 0)
+                        <span class="badge bg-success">Semua Aman</span>
+                    @endif
+                </div>
+            </div>
 
+            @if($transaksiExpired->isEmpty())
+                <div class="flex flex-col items-center justify-center py-10 text-white-dark">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-10 w-10 opacity-40 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm">Belum ada data barang transaksi masuk dengan expired date</p>
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="ltr:rounded-l-md rtl:rounded-r-md">No</th>
+                                <th>Nama Barang</th>
+                                <th>Kategori</th>
+                                <th>Tanggal Masuk</th>
+                                <th>Jumlah Masuk</th>
+                                <th>Expired Date</th>
+                                <th>Status Masa Simpan</th>
+                                <th class="ltr:rounded-r-md rtl:rounded-l-md">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($transaksiExpired as $item)
+                            @php
+                                $today = \Carbon\Carbon::today();
+                                $expDate = \Carbon\Carbon::parse($item->expired_date)->startOfDay();
+                                $diffDays = (int) $today->diffInDays($expDate, false);
+                            @endphp
+                            <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
+                                <td>{{ $transaksiExpired->firstItem() ? $transaksiExpired->firstItem() + $loop->index : $loop->iteration }}</td>
+                                <td class="font-semibold text-black dark:text-white">
+                                    {{ $item->barang->nama_barang ?? 'Barang tidak ditemukan' }}
+                                    @if($item->barang && $item->barang->satuan)
+                                        <span class="text-xs text-gray-400 font-normal">({{ $item->barang->satuan }})</span>
+                                    @endif
+                                </td>
+                                <td>{{ $item->barang->kategori ?? '-' }}</td>
+                                <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d F Y') }}</td>
+                                <td>
+                                    <span class="font-bold text-success">+{{ number_format($item->jumlah) }}</span>
+                                </td>
+                                <td>
+                                    <span class="font-semibold {{ $diffDays < 0 ? 'text-danger' : ($diffDays <= 30 ? 'text-warning' : '') }}">
+                                        {{ \Carbon\Carbon::parse($item->expired_date)->format('d F Y') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($diffDays < 0)
+                                        <span class="badge bg-danger">Kadaluarsa ({{ abs($diffDays) }} hari lalu)</span>
+                                    @elseif($diffDays == 0)
+                                        <span class="badge bg-danger">Kadaluarsa Hari Ini</span>
+                                    @elseif($diffDays <= 30)
+                                        <span class="badge bg-warning">Hampir Kadaluarsa ({{ $diffDays }} hari lagi)</span>
+                                    @else
+                                        <span class="badge bg-success">Aman ({{ $diffDays }} hari lagi)</span>
+                                    @endif
+                                </td>
+                                <td>{{ $item->keterangan ?? '-' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4">
+                    {{ $transaksiExpired->appends(request()->except('expired_page'))->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
     {{-- Tabel Barang Di Bawah Minimum --}}
     <div class="mt-6 grid grid-cols-1 gap-6">
         <div class="panel">
@@ -281,7 +368,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th class="ltr:rounded-l-md rtl:rounded-r-md">Nama Barang</th>
+                                <th class="ltr:rounded-l-md rtl:rounded-r-md">No</th>
+                                <th>Nama Barang</th>
                                 <th>Kategori</th>
                                 <th>Satuan</th>
                                 <th>Stok Saat Ini</th>
@@ -292,6 +380,7 @@
                         <tbody>
                             @foreach($barangBawahMinimum as $item)
                             <tr class="group text-white-dark hover:text-black dark:hover:text-white-light/90">
+                                <td>{{ $barangBawahMinimum->firstItem() ? $barangBawahMinimum->firstItem() + $loop->index : $loop->iteration }}</td>
                                 <td class="font-semibold text-black dark:text-white">
                                     {{ $item->nama_barang }}
                                 </td>
@@ -308,11 +397,15 @@
                     </table>
                 </div>
                 <div class="mt-4">
-                    {{ $barangBawahMinimum->links() }}
+                    {{ $barangBawahMinimum->appends(request()->except('page'))->links() }}
                 </div>
             @endif
         </div>
     </div>
+
+
 </div>
 @endsection
+
+
 

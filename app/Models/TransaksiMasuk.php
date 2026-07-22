@@ -13,6 +13,7 @@ class TransaksiMasuk extends Model
         'tanggal',
         'jumlah',
         'keterangan',
+        'expired_date',
     ];
 
     public function barang()

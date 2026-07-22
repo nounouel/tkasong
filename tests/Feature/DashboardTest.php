@@ -35,11 +35,12 @@ class DashboardTest extends TestCase
             'stok_minimum' => 10,
         ]);
 
-        // Add incoming stock
+        // Add incoming stock with expired date
         TransaksiMasuk::create([
             'id_barang' => $barang1->id,
             'tanggal' => '2026-05-01',
-            'jumlah' => 100
+            'jumlah' => 100,
+            'expired_date' => '2026-06-01'
         ]);
 
         TransaksiMasuk::create([
@@ -75,8 +76,14 @@ class DashboardTest extends TestCase
         $this->assertEquals('Beras Pandan wangi', $top5Terjual->first()->nama_barang);
         $this->assertEquals(60, $top5Terjual->first()->total_terjual);
 
+        $transaksiExpired = $response->viewData('transaksiExpired');
+        $this->assertCount(1, $transaksiExpired);
+        $this->assertEquals('Beras Pandan wangi', $transaksiExpired->first()->barang->nama_barang);
+
         $response->assertSee('Total Stok Masuk');
         $response->assertSee('Total Stok Keluar');
         $response->assertSee('Top 5 Barang Paling Banyak Terjual');
+        $response->assertSee('Barang Expired Date (Transaksi Masuk)');
     }
 }
+

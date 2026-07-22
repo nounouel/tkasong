@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barang;
+use App\Models\TransaksiMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,13 +53,32 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // --- Indikator 3: Barang dengan Expired Date (Transaksi Masuk) ---
+        $transaksiExpiredQuery = TransaksiMasuk::with('barang.kategoriRelation')
+            ->whereNotNull('expired_date')
+            ->orderBy('expired_date', 'asc');
+
+        $jumlahKadaluarsa = TransaksiMasuk::whereNotNull('expired_date')
+            ->where('expired_date', '<', now()->toDateString())
+            ->count();
+
+        $jumlahHampirKadaluarsa = TransaksiMasuk::whereNotNull('expired_date')
+            ->whereBetween('expired_date', [now()->toDateString(), now()->addDays(30)->toDateString()])
+            ->count();
+
+        $transaksiExpired = $transaksiExpiredQuery->paginate(5, ['*'], 'expired_page');
+
         return view('dashboard.home', compact(
             'barangBawahMinimum',
             'jumlahBawahMinimum',
             'totalMasuk',
             'totalKeluar',
             'top5Menipis',
-            'top5Terjual'
+            'top5Terjual',
+            'transaksiExpired',
+            'jumlahKadaluarsa',
+            'jumlahHampirKadaluarsa'
         ));
     }
 }
+

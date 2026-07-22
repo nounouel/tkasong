@@ -46,6 +46,7 @@ class TransaksiMasukController extends Controller
             'id_barang' => 'required|exists:barang,id',
             'tanggal'   => 'required|date',
             'jumlah'    => 'required|integer|min:1',
+            'expired_date' => 'nullable|date',
             'keterangan' => 'nullable|string',
         ]);
 
@@ -69,6 +70,7 @@ class TransaksiMasukController extends Controller
             'id_barang' => 'required|exists:barang,id',
             'tanggal'   => 'required|date',
             'jumlah'    => 'required|integer|min:1',
+            'expired_date' => 'nullable|date',
             'keterangan' => 'nullable|string',
         ]);
 

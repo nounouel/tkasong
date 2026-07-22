@@ -53,6 +53,14 @@
                 </div>
 
                 <div class="mb-5">
+                    <label for="expired_date" class="dark:text-white-light font-semibold">Expired Date</label>
+                    <input id="expired_date" type="date" name="expired_date" value="{{ old('expired_date', $transaksiMasuk->expired_date) }}" class="form-input" required/>
+                    @error('expired_date')
+                        <span class="text-danger text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="mb-5">
                     <label for="keterangan" class="dark:text-white-light font-semibold">Keterangan</label>
                     <textarea id="keterangan" name="keterangan" rows="3" class="form-input" placeholder="Masukkan keterangan (opsional)">{{ old('keterangan', $transaksiMasuk->keterangan) }}</textarea>
                     @error('keterangan')
